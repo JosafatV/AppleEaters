@@ -1,23 +1,14 @@
-CC = nasm
-echo: make_output_echo make_executable_echo
-d8: make_output_d8 make_executable_d8
+CC = gcc
 
-# sudo apt-get install nasm
-make_output_echo: echo.asm
-	@echo "Compiling..."
-	${CC} -f elf64 -o echo.o echo.asm
+eco: eco.s
+	@echo "Compiling and running eco..."
+	${CC} eco.s -no-pie -o eco
+	./eco
 
-make_executable_echo: echo.o
-	@echo "Creating exe..."
-	ld echo.o -o echo
-
-make_output_d8: rollD8.asm
-	@echo "Compiling..."
-	${CC} -f elf64 -o rollD8.o rollD8.asm
-
-make_executable_d8: rollD8.o
-	@echo "Creating exe..."
-	ld rollD8.o -o rollD8
+rand: rand.s
+	@echo "Compiling and running rand..."
+	${CC} rand.s -no-pie -o rand
+	./rand
 
 clean: 
 	@echo "Cleaning..."
