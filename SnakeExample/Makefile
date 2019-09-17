@@ -1,11 +1,11 @@
 CC = nasm
-NAME = boot
+NAME = snake
 SRC = $(NAME).asm
 OBJ = $(NAME).o
 BIN = $(NAME).bin
 IMG = $(NAME).img
 NFLAGS = -f bin
-QFLAGS = -drive format=raw,file=$(IMG) ##qemu flags
+QFLAGS = -drive format=raw,file=$(IMG)
 
 all: $(BIN)
 $(BIN):
