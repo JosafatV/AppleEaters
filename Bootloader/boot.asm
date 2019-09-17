@@ -1,10 +1,17 @@
-bits 16
+
 STAGE2_ABS_ADDR  equ 0x07e00
 STAGE2_RUN_SEG   equ 0x0000
 STAGE2_RUN_OFS   equ STAGE2_ABS_ADDR
 STAGE2_LOAD_SEG  equ STAGE2_ABS_ADDR>>4
+STAGE2_LBA_START equ 1          ; Logical Block Address(LBA) Stage2 starts on
+                                ;     LBA 1 = sector after boot sector
+
+bits 16
 
 org 0x7C00
+
+%include "bpb.inc"
+
 init: 
 
 	xor ax, ax                  ; DS=SS=ES=0 for stage2 loading
@@ -91,13 +98,16 @@ reset_floppy:
   mov sp, bp
   pop bp
   ret
+
 read_kernel:
   mov si, loading_msg
   call print_string
-  mov si, 1
 
-  mov ax, STAGE2_LOAD_SEG   ; setting up the address to read into
-  mov es, ax       ; moving the value in to es
+  mov si, 1
+  ;call lba_to_chs             ; Convert current LBA to CHS
+
+  mov ax , STAGE2_LOAD_SEG   ; setting up the address to read into
+  mov es, ax
   xor bx, bx       ; clearing bx
   mov ah, 0x02     ; floppy function
   mov al, 1        ; read 1 sector
@@ -112,12 +122,6 @@ read_kernel:
   
   mov si, loading_success
   call print_string
-
-  mov ax, 10
-.loopcito:
-	dec ax
-	cmp ax, 0
-	jne .loopcito
 	
 	mov ax, STAGE2_RUN_SEG      ; Set up the segments appropriate for Stage2 to run
   mov ds, ax
@@ -130,16 +134,34 @@ read_kernel:
   mov gs, ax
   ; SS:SP is already at 0x0000:0x7c00, keep it that way
   ; DL still contains the boot drive number
-  ; Far jump to second stage at 0x0000:0x7e00
+  ; Far jump to second stage at 0x0000:0x7e00; just a jump to 0x7e00
   jmp STAGE2_RUN_SEG:STAGE2_RUN_OFS
   ;jmp STAGE2_LOAD_SEG:STAGE2_RUN_SEG
 
+lba_to_chs:
+    push ax                    ; Preserve AX
+    mov ax, si                 ; Copy LBA to AX
+    xor dx, dx                 ; Upper 16-bit of 32-bit value set to 0 for DIV
+    div word [SectorsPerTrack] ; 32-bit by 16-bit DIV : LBA / SPT
+    mov cl, dl                 ; CL = S = LBA mod SPT
+    inc cl                     ; CL = S = (LBA mod SPT) + 1
+    xor dx, dx                 ; Upper 16-bit of 32-bit value set to 0 for DIV
+    div word [NumHeads]        ; 32-bit by 16-bit DIV : (LBA / SPT) / HEADS
+    mov dh, dl                 ; DH = H = (LBA / SPT) mod HEADS
+    mov dl, [bootDevice]      ; boot device, not necessary to set but convenient
+    mov ch, al                 ; CH = C(lower 8 bits) = (LBA / SPT) / HEADS
+    shl ah, 6                  ; Store upper 2 bits of 10-bit Cylinder into
+    or  cl, ah                 ;     upper 2 bits of Sector (CL)
+    pop ax                     ; Restore scratch registers
+    ret
 
 welcome_message: db "Bootloader started!", 0x0D, 0x0A, 0 			; we need to explicitely put the zero byte here
 floppy_reset_done: db "Floppy has been reset.", 0x0D, 0x0A, 0
 loading_msg: db "Reading Kernel Sector", 0x0D, 0x0A, 0
 loading_success: db "Kernel Sector Loaded", 0x0D, 0x0A, 0
 done: db "Bootloader Done.", 0x0D, 0x0A, 0
+
+bootDevice:      db 0x00
 
 times 510-($-$$) db 0     ; fill the output file with zeroes until 510 bytes are full
 dw 0xaa55                 ; magic number that tells the BIOS this is bootable
