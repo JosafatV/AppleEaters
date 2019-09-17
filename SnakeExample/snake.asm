@@ -84,16 +84,16 @@ ListenForInput:  ;Repeatedly check for keyboard input
   ret
 
 InterpretKeypress:
-  CMP AL, 0x77
+  CMP AL, 0x48 ;UP
   JE .w_pressed
 
-  CMP AL, 0x61
+  CMP AL, 0x4B ;LEFT
   JE .a_pressed
 
-  CMP AL, 0x73
+  CMP AL, 0x4D ;DOWN
   JE .s_pressed
 
-  CMP AL, 0x64
+  CMP AL, 0x50 ;RIGHT
   JE .d_pressed
   call Debug
 

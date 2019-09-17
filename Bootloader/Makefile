@@ -17,7 +17,9 @@ NFLAGS = -f bin
 QFLAGS = -drive format=raw,file=$(IMG) ##qemu flags
 
 $(IMG): $(IMG_BOOT) $(IMG_KERNEL)
-	cat $(IMG_BOOT) $(IMG_KERNEL) > $(IMG)
+	dd if=$(IMG_BOOT) of=$(IMG) bs=512 count=1
+	dd if=$(IMG_KERNEL) of=$(IMG) bs=512 count=1 seek=1
+
 
 $(IMG_BOOT):
 	@echo "Compiling and linking..."

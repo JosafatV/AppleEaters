@@ -132,6 +132,7 @@ read_kernel:
   ; DL still contains the boot drive number
   ; Far jump to second stage at 0x0000:0x7e00
   jmp STAGE2_RUN_SEG:STAGE2_RUN_OFS
+  ;jmp STAGE2_LOAD_SEG:STAGE2_RUN_SEG
 
 
 welcome_message: db "Bootloader started!", 0x0D, 0x0A, 0 			; we need to explicitely put the zero byte here
