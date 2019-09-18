@@ -12,6 +12,7 @@ $(BIN):
 	@echo "Compiling and linking..."
 	nasm $(NFLAGS) -o $(IMG) $(SRC)
 
+
 clean: 
 	@echo "Cleaning..."-
 	rm *.img

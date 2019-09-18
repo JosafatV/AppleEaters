@@ -136,6 +136,7 @@ read_kernel:
   ; DL still contains the boot drive number
   ; Far jump to second stage at 0x0000:0x7e00; just a jump to 0x7e00
   jmp STAGE2_RUN_SEG:STAGE2_RUN_OFS
+  ;jmp STAGE2_LOAD_SEG:STAGE2_RUN_SEG
 
 lba_to_chs:
     push ax                    ; Preserve AX
