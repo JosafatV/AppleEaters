@@ -86,7 +86,7 @@ drawEntity:
 	mov bx, word [di+4] ;get entity y
 	sub bx, dx          ;subtract the position of the player from the z position
 	;add bx, 50/2 - 12/2 - 1 ;relative to screen image drawing code for z position
-	add bx, 100/2 - 8/2 - 1 ;relative to screen image drawing code for z position CHANGED
+	add bx, 100/2 - 12/2 - 1 ;relative to screen image drawing code for z position CHANGED
 	call drawImage      ;draw image to buffer
 	ret
 
@@ -103,22 +103,22 @@ checkForCollision:
   jz .whileSkip
   
   mov ax, word [bx+2] ;ax = entity x
-  sub ax, 8           ;subtract 8 because of hitbox
+  sub ax, 7           ;subtract 8 because of hitbox
   cmp ax, cx ; (entityX-8 <= playerX)
     jg .whileSkip
     
   mov ax, word [bx+2] ;ax = entity x
-  add ax, 8           ;add 8 because of hitbox
+  add ax, 7           ;add 8 because of hitbox
   cmp ax, cx ; (entityX+8 > playerX)
     jle .whileSkip
 
   mov ax, word [bx+4] ;ax = entity z
-  sub ax, 10          ;subtract 10 because of hitbox
+  sub ax, 7          ;subtract 10 because of hitbox
   cmp ax, dx ; (entityZ-10 <= playerZ)
     jg .whileSkip
     
   mov ax, word [bx+4] ;ax = entity z
-  add ax, 9           ;subtract 9 because of hitbox
+  add ax, 7           ;subtract 9 because of hitbox
   cmp ax, dx ; (entityZ+9 > playerZ)
     jle .whileSkip
     
@@ -131,7 +131,7 @@ checkForCollision:
 
   ;compare end of game 
   cmp word [appleFound], 3
-  je init_game
+  ;je init_game
   
   ;ding ding count found
   
@@ -511,16 +511,16 @@ iterateMap:
 blockCollison:
   push cx
   push dx
-  sub cx, 8    ;subtract 8 because of hitbox
+  sub cx, 7    ;subtract 8 because of hitbox
   cmp cx, si ; (blockX-8 <= playerX)
     jg .skip
-  add cx, 8+8          ;add 8 because of hitbox
+  add cx, 8+7          ;add 8 because of hitbox
   cmp cx, si ; (blockX+8 > playerX)
     jle .skip
-  sub dx, 10          ;subtract 10 because of hitbox
+  sub dx, 9          ;subtract 10 because of hitbox
   cmp dx, bx ; (blockZ-10 <= playerZ)
     jg .skip
-  add dx, 9+10         ;subtract 9 because of hitbox
+  add dx, 5+10         ;subtract 9 because of hitbox
   cmp dx, bx ; (blockZ+9 > playerZ)
     jle .skip
     stc
@@ -531,7 +531,7 @@ blockCollison:
   pop dx
   pop cx
   ret
-  
+
 toggle_inverted:
   cmp byte [inverted], 0
   ;direction is inverted so set to normal
