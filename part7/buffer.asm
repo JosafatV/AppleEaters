@@ -13,7 +13,7 @@ resetBuffer:
 	pusha
 	mov cx, 80*60/2
 	;xor ax, ax ;this will make the background black
-	mov ax, 0xC3C3 ;this paints the background green
+	mov ax, 0x0303 ;this paints the background green
 	mov di, [screenPos]
 	rep stosw
 	popa

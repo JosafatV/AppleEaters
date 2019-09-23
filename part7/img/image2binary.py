@@ -7,7 +7,7 @@ if len(sys.argv) < 2:
     outputFile  = "fox.bin" #name of output file
 elif len(sys.argv) < 3:
     convertFile = sys.argv[1]
-    outputFile  = sys.argv[1]+".bin"
+    outputFile  = sys.argv[1][:-4]+".bin"
 elif len(sys.argv) >= 3:
     convertFile = sys.argv[1]
     outputFile  = sys.argv[2]

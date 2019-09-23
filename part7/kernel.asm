@@ -132,7 +132,7 @@ checkForCollision:
 	;mov dx, [di+4]         ;set new z pos to current z pos => no movement
 	
 	mov word [si], 0
-	inc word [coinFound]
+	inc word [appleFound]
 	
 	;ding ding count found
 	
@@ -229,19 +229,19 @@ keyboardINTListener: ;interrupt handler for keyboard events
 		jnc .keyDown
 			dec bx ; bx = 1: key up event
 		.keyDown:
-		cmp al,0x1e ;a
+		cmp al,0x4b ;left
 		jne .check1         
 			mov byte [cs:pressA], bl ;use cs overwrite because we don't know where the data segment might point to
 		.check1:
-		cmp al,0x20 ;d
+		cmp al,0x4d ;right
 		jne .check2
 			mov byte [cs:pressD], bl
 		.check2:
-		cmp al,0x11 ;w
+		cmp al,0x48 ;up
 		jne .check3
 			mov byte [cs:pressW], bl
 		.check3:
-		cmp al,0x1f ;s
+		cmp al,0x50 ;down
 		jne .check4
 			mov byte [cs:pressS], bl
 		.check4:
@@ -328,10 +328,21 @@ setSpawn:
 	
 ;spawn the coins add set the spawn position of the player
 initMap:
-	mov si, coinImg
+	mov si, appleImg
 	mov bp, addEntity
-	mov ah, 'X'
-	call iterateMap  ; iterate the map and add a coin at every 'X' on the map
+	mov ah, 'A'
+	call iterateMap  ; iterate the map and add an apple at every 'A' on the map
+
+  mov si, lemonImg
+  mov bp, addEntity
+  mov ah, 'L'
+  call iterateMap  ; iterate the map and add a lemon at every 'L' on the map
+
+  mov si, orangeImg
+  mov bp, addEntity
+  mov ah, 'O'
+  call iterateMap  ; iterate the map and add an orange at every 'O' on the map
+
 	call spawnPlayer ; set spawn for player
 	ret
 	
@@ -423,7 +434,7 @@ blockCollison:
 
 ;game value
 
-coinFound dw 0
+appleFound dw 0
 
 ;entity array
 
@@ -492,34 +503,74 @@ boxImg:
 	dw boxImg_0     ;frames
 	dw 0            ;zero end frame
 	
-coinImg:
+appleImg:
 	dw 5            ;time per frames
 	dw 20           ;time of animation
-	dw coin_0       ;frames
-	dw coin_1       ;frames
-	dw coin_2       ;frames
-	dw coin_1       ;frames
+	dw apple_0       ;frames
+	dw apple_1       ;frames
+	dw apple_2       ;frames
+	dw apple_1       ;frames
 	dw 0            ;zero end frame
 
-playerImg_front_0 incbin "img/player_front_0.bin"
-playerImg_front_1 incbin "img/player_front_1.bin"
-playerImg_front_2 incbin "img/player_front_2.bin"
-playerImg_back_0  incbin "img/player_back_0.bin"
-playerImg_back_1  incbin "img/player_back_1.bin"
-playerImg_back_2  incbin "img/player_back_2.bin"
-playerImg_right_0 incbin "img/player_right_0.bin"
-playerImg_right_1 incbin "img/player_right_1.bin"
-playerImg_right_2 incbin "img/player_right_2.bin"
-playerImg_left_0  incbin "img/player_left_0.bin"
-playerImg_left_1  incbin "img/player_left_1.bin"
-playerImg_left_2  incbin "img/player_left_2.bin"
+orangeImg:
+  dw 5            ;time per frames
+  dw 20           ;time of animation
+  dw orange_0       ;frames
+  dw orange_1       ;frames
+  dw orange_2       ;frames
+  dw orange_1       ;frames
+  dw 0            ;zero end frame
 
-coin_0  incbin "img/coin_0.bin"
-coin_1  incbin "img/coin_1.bin"
-coin_2  incbin "img/coin_2.bin"
+lemonImg:
+  dw 5            ;time per frames
+  dw 20           ;time of animation
+  dw lemon_0       ;frames
+  dw lemon_1       ;frames
+  dw lemon_2       ;frames
+  dw lemon_1       ;frames
+  dw 0            ;zero end frame
 
-boxImg_0         incbin "img/box.bin"
-tileImg_0        incbin "img/tile.bin"
+; playerImg_front_0 incbin "img/player_front_0.bin"
+; playerImg_front_1 incbin "img/player_front_1.bin"
+; playerImg_front_2 incbin "img/player_front_2.bin"
+; playerImg_back_0  incbin "img/player_back_0.bin"
+; playerImg_back_1  incbin "img/player_back_1.bin"
+; playerImg_back_2  incbin "img/player_back_2.bin"
+; playerImg_right_0 incbin "img/player_right_0.bin"
+; playerImg_right_1 incbin "img/player_right_1.bin"
+; playerImg_right_2 incbin "img/player_right_2.bin"
+; playerImg_left_0  incbin "img/player_left_0.bin"
+; playerImg_left_1  incbin "img/player_left_1.bin"
+; playerImg_left_2  incbin "img/player_left_2.bin"
+
+playerImg_front_0 incbin "img/snake_head_down.bin"
+playerImg_front_1 incbin "img/snake_body.bin"
+playerImg_front_2 incbin "img/snake_tail_down.bin"
+playerImg_back_0  incbin "img/snake_head_up.bin"
+playerImg_back_1  incbin "img/snake_body.bin"
+playerImg_back_2  incbin "img/snake_tail_up.bin"
+playerImg_right_0 incbin "img/snake_head_right.bin"
+playerImg_right_1 incbin "img/snake_body.bin"
+playerImg_right_2 incbin "img/snake_tail_right.bin"
+playerImg_left_0  incbin "img/snake_head_left.bin"
+playerImg_left_1  incbin "img/snake_body.bin"
+playerImg_left_2  incbin "img/snake_tail_left.bin"
+
+apple_0  incbin "img/apple_0.bin"
+apple_1  incbin "img/apple_1.bin"
+apple_2  incbin "img/apple_2.bin"
+
+orange_0 incbin "img/orange_0.bin"
+orange_1 incbin "img/orange_1.bin"
+orange_2 incbin "img/orange_2.bin"
+
+lemon_0 incbin "img/lemon_0.bin"
+lemon_1 incbin "img/lemon_1.bin"
+lemon_2 incbin "img/lemon_2.bin"
+
+boxImg_0         incbin "img/block.bin"
+; tileImg_0        incbin "img/tile.bin"
+tileImg_0        incbin "img/grass.bin"
 
 ASCIImap          incbin "img/map.bin"
 db 0
