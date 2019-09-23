@@ -1,5 +1,8 @@
-bits 16
-org 0x7E00
+org 0x8000
+bits 16 
+
+;precompiler constant
+%define entityArraySize 100
 kernel:
     jmp k_main
 
@@ -29,4 +32,8 @@ k_main:
 cli
 hlt
 
-times 512-($-$$) db 0
+%assign usedMemory ($-$$)
+%assign usableMemory (512*16)
+%warning [usedMemory/usableMemory] Bytes used
+times (512*16)-($-$$) db 0 ;kernel must have size multiple of 512 so let's pad it to the correct size
+;times (512*1000)-($-$$) db 0 ;toggle this to use in bochs
