@@ -54,8 +54,8 @@ gameLoop:
 	; mov ax, 80/2 - 9/2 - 1      ;center player image
 	; mov bx, 50/2 - 12/2 - 1     ;center player image
 
-	mov ax, 160/2 - 9/2 - 1      ;center player image CHANGED
-	mov bx, 100/2 - 12/2 - 1     ;center player image CHANGED
+	mov ax, 160/2 - 8/2 - 1      ;center player image CHANGED
+	mov bx, 100/2 - 8/2 - 1     ;center player image CHANGED
 
 	call drawImage
 	; END OF PLAYER DRAWING CODE
@@ -95,11 +95,11 @@ drawEntity:
 	mov ax, word [di+2] ;get entity x
 	sub ax, cx          ;subtract the position of the player from the x position
 	;add ax, 80/2 - 9/2 - 1  ;relative to screen image drawing code for x position
-	add ax, 160/2 - 9/2 - 1  ;relative to screen image drawing code for x position CHANGED
+	add ax, 160/2 - 8/2 - 1  ;relative to screen image drawing code for x position CHANGED
 	mov bx, word [di+4] ;get entity y
 	sub bx, dx          ;subtract the position of the player from the z position
 	;add bx, 50/2 - 12/2 - 1 ;relative to screen image drawing code for z position
-	add bx, 100/2 - 12/2 - 1 ;relative to screen image drawing code for z position CHANGED
+	add bx, 100/2 - 8/2 - 1 ;relative to screen image drawing code for z position CHANGED
 	call drawImage      ;draw image to buffer
 	ret
 
@@ -375,33 +375,55 @@ addEntity:
 
 ;di = entity cx,dx = xpos,zpos
 drawBlock:
-	mov ax, word [player+2]
-	sub ax, cx
-	imul ax, ax
-	cmp ax, 3000 ; CHANGED
-	jge .skip 	 ; CHANGED
+	pusha
+		mov ax, word [player+2]
+		sub ax, cx
+		;imul ax, ax
 
-	mov bx, word [player+4]
-	sub bx, dx
-	imul bx, bx
-	cmp bx, 3000 ; CHANGED
-	jge .skip 	 ; CHANGED
+		call abs_value
 
-	;add ax, bx
-	;cmp ax, 0 ;calculate distance CHANGED
-	;jge .skip
+		cmp ax, 90 ; CHANGED
+		jge .skip 	 ; CHANGED
 
-	mov ax, cx
-	mov bx, dx
-	sub ax, word [player+2]   ;subtract the position of the player from the x position
-	;add ax, 80/2 - 9/2 - 1    ;relative to screen image drawing code for x position
-	add ax, 160/2 - 9/2 - 1    ;relative to screen image drawing code for x position CHANGED
-	sub bx, word [player+4]   ;subtract the position of the player from the z position
-	;add bx, 50/2 - 12/2 - 1   ;relative to screen image drawing code for z position
-	add bx, 100/2 - 12/2 - 1   ;relative to screen image drawing code for z position CHANGED
-	call drawImage            ;draw image to buffer
-	.skip:
-	clc
+		mov bx, word [player+4]
+		sub bx, dx
+		mov ax, bx
+		call abs_value
+		; imul bx, bx
+
+		cmp ax, 90 ; CHANGED
+		jge .skip 	 ; CHANGED
+
+		;add ax, bx
+		;cmp ax, 0 ;calculate distance CHANGED
+		;jge .skip
+
+		mov ax, cx
+		mov bx, dx
+		sub ax, word [player+2]   ;subtract the position of the player from the x position
+		;add ax, 80/2 - 9/2 - 1    ;relative to screen image drawing code for x position
+		add ax, 160/2 - 9/2 - 1    ;relative to screen image drawing code for x position CHANGED
+		sub bx, word [player+4]   ;subtract the position of the player from the z position
+		;add bx, 50/2 - 12/2 - 1   ;relative to screen image drawing code for z position
+		add bx, 100/2 - 12/2 - 1   ;relative to screen image drawing code for z position CHANGED
+		call drawImage            ;draw image to buffer
+		.skip:
+		clc
+	popa
+	ret
+
+; value in ax, output in ax
+abs_value:
+	push dx
+		mov bx, ax ; copies ax
+		shr bx, 15 ; gets sign of ax
+		and bx, 1 ; gets only sign of ax
+		cmp bx, 1
+		jne .abs_value_end
+		; if sign is negative, multiply by -1
+		imul ax, -1
+	.abs_value_end:
+	pop dx
 	ret
 	
 ;set the position of the player to x=cx, z=dx
@@ -498,16 +520,16 @@ iterateMap:
 blockCollison:
 	push cx
 	push dx
-	sub cx, 8    ;subtract 8 because of hitbox
+	sub cx, 10;8    ;subtract 8 because of hitbox
 	cmp cx, si ; (blockX-8 <= playerX)
 		jg .skip
-	add cx, 8+8          ;add 8 because of hitbox
+	add cx, 10;8+10;CHANGED 8+8          ;add 8 because of hitbox
 	cmp cx, si ; (blockX+8 > playerX)
 		jle .skip
-	sub dx, 10          ;subtract 10 because of hitbox
+	sub dx, 0;8;10 CHANGED         ;subtract 10 because of hitbox
 	cmp dx, bx ; (blockZ-10 <= playerZ)
 		jg .skip
-	add dx, 9+10         ;subtract 9 because of hitbox
+	add dx, 8;8+10;9+10 CHANGED         ;subtract 9 because of hitbox
 	cmp dx, bx ; (blockZ+9 > playerZ)
 		jle .skip
 		stc
