@@ -1,6 +1,6 @@
 # binaries
-.img
-.bin
+part7/*.img
+part7/*.bin
 
 # Prerequisites
 *.d
