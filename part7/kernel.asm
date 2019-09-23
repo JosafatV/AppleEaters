@@ -51,8 +51,12 @@ gameLoop:
 	add si, ax		   ;add the offset to the frame
 	mov si, [si]       ;set the image parameter to the image referenced in the frame
 	
-	mov ax, 80/2 - 8/2 - 1      ;center player image
-	mov bx, 50/2 - 8/2 - 1     ;center player image
+	; mov ax, 80/2 - 9/2 - 1      ;center player image
+	; mov bx, 50/2 - 12/2 - 1     ;center player image
+
+	mov ax, 160/2 - 9/2 - 1      ;center player image CHANGED
+	mov bx, 100/2 - 12/2 - 1     ;center player image CHANGED
+
 	call drawImage
 	; END OF PLAYER DRAWING CODE
 	
@@ -90,10 +94,12 @@ drawEntity:
 	
 	mov ax, word [di+2] ;get entity x
 	sub ax, cx          ;subtract the position of the player from the x position
-	add ax, 80/2 - 9/2 - 1  ;relative to screen image drawing code for x position
+	;add ax, 80/2 - 9/2 - 1  ;relative to screen image drawing code for x position
+	add ax, 160/2 - 9/2 - 1  ;relative to screen image drawing code for x position CHANGED
 	mov bx, word [di+4] ;get entity y
 	sub bx, dx          ;subtract the position of the player from the z position
-	add bx, 50/2 - 12/2 - 1 ;relative to screen image drawing code for z position
+	;add bx, 50/2 - 12/2 - 1 ;relative to screen image drawing code for z position
+	add bx, 100/2 - 12/2 - 1 ;relative to screen image drawing code for z position CHANGED
 	call drawImage      ;draw image to buffer
 	ret
 
@@ -376,15 +382,17 @@ drawBlock:
 	sub bx, dx
 	imul bx, bx
 	add ax, bx
-	cmp ax, 3000 ;calculate distance
+	cmp ax, 8000 ;calculate distance
 	jge .skip
 
 	mov ax, cx
 	mov bx, dx
 	sub ax, word [player+2]   ;subtract the position of the player from the x position
-	add ax, 80/2 - 9/2 - 1    ;relative to screen image drawing code for x position
+	;add ax, 80/2 - 9/2 - 1    ;relative to screen image drawing code for x position
+	add ax, 160/2 - 9/2 - 1    ;relative to screen image drawing code for x position CHANGED
 	sub bx, word [player+4]   ;subtract the position of the player from the z position
-	add bx, 50/2 - 12/2 - 1   ;relative to screen image drawing code for z position
+	;add bx, 50/2 - 12/2 - 1   ;relative to screen image drawing code for z position
+	add bx, 100/2 - 12/2 - 1   ;relative to screen image drawing code for z position CHANGED
 	call drawImage            ;draw image to buffer
 	.skip:
 	clc

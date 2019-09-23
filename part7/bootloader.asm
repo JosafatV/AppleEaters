@@ -29,7 +29,7 @@ start:
 call clearscreen
 mov si, welcomemsg ; loads the address of "msg" into SI register
 call print_string
-;call display_message
+call display_message
 
 ;Initialize Registers
 cli
@@ -162,14 +162,11 @@ errorpart:            ;if stuff went wrong you end here so let's display a messa
 	end:
 		jmp $
 
-
-
-
 errormsg db "Failed to load...",0x0D, 0x0A, 0 
 welcomemsg db "Welcome to AppleEaters! ",0x0D, 0x0A, 0
 startingmsg1 db "Starting in ", 0 
 startingmsg2 db "n seconds...",0x0D, 0x0A, 0 
-secondcount db 10
+secondcount db 2
 times 510-($-$$) db 0
         ;Begin MBR Signature
 db 0x55 ;byte 511 = 0x55
