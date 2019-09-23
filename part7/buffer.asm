@@ -60,13 +60,13 @@ resetBuffer:
  	mov cx, 200
  	.loop: ; loop for all y
  		mov dx, cx
- 		mov cx, 320/2
+ 		mov cx, 320/2 ; loop 160 pixels
  		.innerloop: ; loop for all x
  			mov si, 320
  			sub si, cx ;invert x-axis
  			mov bx, 200
  			sub bx, dx ;invert y-axis
- 			shr bx, 1
+ 			shr bx, 1 	; divides by 2
  			imul bx, 160
  			add si, bx
  			add si, [screenPos]

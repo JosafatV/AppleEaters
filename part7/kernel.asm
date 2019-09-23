@@ -2,7 +2,7 @@ org 0x8000
 bits 16 
 
 ;precompiler constant
-%define entityArraySize 16
+%define entityArraySize 100
 ;Let's begin by going into graphic mode
 call initGraphics
 
@@ -378,12 +378,18 @@ drawBlock:
 	mov ax, word [player+2]
 	sub ax, cx
 	imul ax, ax
+	cmp ax, 3000 ; CHANGED
+	jge .skip 	 ; CHANGED
+
 	mov bx, word [player+4]
 	sub bx, dx
 	imul bx, bx
-	add ax, bx
-	cmp ax, 8000 ;calculate distance
-	jge .skip
+	cmp bx, 3000 ; CHANGED
+	jge .skip 	 ; CHANGED
+
+	;add ax, bx
+	;cmp ax, 0 ;calculate distance CHANGED
+	;jge .skip
 
 	mov ax, cx
 	mov bx, dx
@@ -406,37 +412,39 @@ setSpawn:
 	clc
 	ret
 	
-;spawn the coins add set the spawn position of the player
+;spawn the elements add set the spawn position of the player
 initMap:
 	mov si, appleImg
 	mov bp, addEntity
 	mov ah, 'A'
 	call iterateMap  ; iterate the map and add an apple at every 'A' on the map
 
-  mov si, lemonImg
-  mov bp, addEntity
-  mov ah, 'L'
-  call iterateMap  ; iterate the map and add a lemon at every 'L' on the map
+	mov si, lemonImg
+	mov bp, addEntity
+	mov ah, 'L'
+	call iterateMap  ; iterate the map and add a lemon at every 'L' on the map
 
-  mov si, orangeImg
-  mov bp, addEntity
-  mov ah, 'O'
-  call iterateMap  ; iterate the map and add an orange at every 'O' on the map
+	mov si, orangeImg
+	mov bp, addEntity
+	mov ah, 'O'
+	call iterateMap  ; iterate the map and add an orange at every 'O' on the map
 
 	call spawnPlayer ; set spawn for player
 	ret
 	
 ;draw the map
 drawMap:
-	mov si, boxImg_0
-	mov bp, drawBlock
-	mov ah, '0'
-	call iterateMap ; iterate the map and add a box at every '0' on the map
-	;this second iteration is pretty unefficient but only optional for some ground texture
-	mov si, tileImg_0
-	mov bp, drawBlock
-	mov ah, ' '
-	call iterateMap ; iterate the map and add a tile at every ' ' on the map
+	pusha
+		mov si, boxImg_0
+		mov bp, drawBlock
+		mov ah, '0'
+		call iterateMap ; iterate the map and add a box at every '0' on the map
+		;this second iteration is pretty unefficient but only optional for some ground texture
+		mov si, tileImg_0
+		mov bp, drawBlock
+		mov ah, ' '
+		call iterateMap ; iterate the map and add a tile at every ' ' on the map
+	popa
 	ret
 	
 ; si = player X, bx = player Y
@@ -458,30 +466,32 @@ spawnPlayer:
 %define ASCIImapHeight 64
 ;bp = function to call, ah = search for, si = parameter for bp function
 iterateMap:
-	mov di, ASCIImap
-	mov cx, 0x0 ; map start x
-	mov dx, 0x0 ; map start y
-	.next:
-	mov al, [di]
-	test al, al
-	je .stop    ; stop when null terminator found
-	cmp al, ah
-	jne .skip   ; skip if the character is not the one this iteration is searching for
-	push ax     ; save the content of ax
-	call bp     ; call the specified function of this iteration
-	pop ax
-	jc .term    ; the carry flag determines if the specified function has found what it was searching for (and thus exits)
-	.skip:
-		inc di                           ; point to the next character
-		add cx, tileWidth                ; increase x pixel position
-		cmp cx, ASCIImapWidth*tileWidth  ; check if x position is at the end of the line
-		jl .next
-	sub dx, tileWidth                    ; decrease y pixel position
-	xor cx, cx                           ; reset x position
-	jmp .next
-	.stop:
-		clc
-	.term:
+	pusha
+		mov di, ASCIImap
+		mov cx, 0x0 ; map start x
+		mov dx, 0x0 ; map start y
+		.next:
+		mov al, [di]
+		test al, al
+		je .stop    ; stop when null terminator found
+		cmp al, ah
+		jne .skip   ; skip if the character is not the one this iteration is searching for
+		push ax     ; save the content of ax
+		call bp     ; call the specified function of this iteration
+		pop ax
+		jc .term    ; the carry flag determines if the specified function has found what it was searching for (and thus exits)
+		.skip:
+			inc di                           ; point to the next character
+			add cx, tileWidth                ; increase x pixel position
+			cmp cx, ASCIImapWidth*tileWidth  ; check if x position is at the end of the line
+			jl .next
+		sub dx, tileWidth                    ; decrease y pixel position
+		xor cx, cx                           ; reset x position
+		jmp .next
+		.stop:
+			clc
+		.term:
+	popa
 	ret
 	
 ;si = player x, bx = player z, cx = block x, dx = block z
