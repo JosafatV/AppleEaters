@@ -9,6 +9,8 @@ call initGraphics
 ;Now let's register some custom interrupt handlers
 call registerInterruptHandlers
 
+init_game:
+
 ;init map
 call initMap
 
@@ -49,8 +51,8 @@ gameLoop:
 	add si, ax		   ;add the offset to the frame
 	mov si, [si]       ;set the image parameter to the image referenced in the frame
 	
-	mov ax, 80/2 - 9/2 - 1      ;center player image
-	mov bx, 50/2 - 12/2 - 1     ;center player image
+	mov ax, 80/2 - 8/2 - 1      ;center player image
+	mov bx, 50/2 - 8/2 - 1     ;center player image
 	call drawImage
 	; END OF PLAYER DRAWING CODE
 	
@@ -141,7 +143,7 @@ checkForCollision:
 	add si, 2           ;set si to the next entry in the entityArray
 	cmp si, entityArray+((entityArraySize-1)*2)
 	jl .whileLoop
-	.whileEnd
+	.whileEnd:
 
 	pusha
 	mov si, cx
@@ -164,41 +166,94 @@ canWalk db 0
 gameControls:
 	mov byte [canWalk], 0
 	mov di, player ;select the player as the main entity for "checkForCollision"
-	mov al, byte [pressA]
-	add al, byte [pressD]
+
+  .check_pause:
+    ;check if game was paused
+    cmp byte [pressSpace], 1
+    ;if it was not pressed continue
+    jne .check_inverted
+    ;else toggle
+    call toggle_pause
+
+
+  .check_inverted:
+    ;check if movement is inverted
+    cmp byte [pressL], 1
+    ;if it was not pressed continue
+    jne .check_movement
+    ;else toggle
+    call toggle_inverted
+
+
+  .check_movement:
+	mov al, byte [pressLeft]
+	add al, byte [pressRight]
 	cmp al, 0
+  ;Not left nor right
+
 	jz .nokeyad
 		mov cx, word [player_PosX] ;set cx to player x
 		mov dx, word [player_PosZ] ;set dx to player z
 		mov bp, [player]           ;set bp to current animation
-		cmp byte [pressD], 1 ;try to move x+1 if 'd' is pressed and set animation accordingly, test other cases otherwise
+
+    cmp byte [paused], 1
+    ;game paused, do nothing
+    je .gamePaused
+
+		cmp byte [pressRight], 1 ;try to move x+1 if 'd' is pressed and set animation accordingly, test other cases otherwise
 		jne .nd
+    cmp byte [inverted], 1 ;verify if movement is inverted
+    je .mov_left
+    .mov_right:
 		inc cx
 		mov bp, playerImg_right
+    jmp .na ;already moved so go check collision
+
 		.nd:
-		cmp byte [pressA], 1 ;try to move x-1 if 'a' is pressed and set animation accordingly, test other cases otherwise
+		cmp byte [pressLeft], 1 ;try to move x-1 if 'a' is pressed and set animation accordingly, test other cases otherwise
 		jne .na
+    cmp byte [inverted], 1
+    je .mov_right
+    .mov_left:
 		dec cx
 		mov bp, playerImg_left
+
 		.na:
 		call checkForCollision ;check if player would collide on new position, if not change position to new position
 	.nokeyad:
-	mov al, byte [pressW]
-	add al, byte [pressS]
+	mov al, byte [pressUp]
+	add al, byte [pressDown]
 	cmp al, 0
+
+  ;Not up nor down
+
 	jz .nokeyws
 		mov cx, word [player_PosX] ;set cx to player x
 		mov dx, word [player_PosZ] ;set dx to player z
 		mov bp, [player]           ;set bp to current animation
-		cmp byte [pressW], 1 ;try to move z-1 if 'w' is pressed and set animation accordingly, test other cases otherwise
+
+    cmp byte [paused], 1
+    ;game paused, do nothing
+    je .gamePaused
+
+		cmp byte [pressUp], 1 ;try to move z-1 if 'w' is pressed and set animation accordingly, test other cases otherwise
 		jne .nw
+    cmp byte [inverted], 1; verify if movement is inverted
+    je .mov_down
+    .mov_up:
 		dec dx
 		mov bp, playerImg_back
+    jmp .ns ;already moved so go check collision
+
 		.nw:
-		cmp byte [pressS], 1 ;try to move z+1 if 's' is pressed and set animation accordingly, test other cases otherwise
+		cmp byte [pressDown], 1 ;try to move z+1 if 's' is pressed and set animation accordingly, test other cases otherwise
 		jne .ns
+    cmp byte [inverted], 1
+    je .mov_up
+    .mov_down:
 		inc dx
 		mov bp, playerImg_front
+
 		.ns:
 		call checkForCollision ;check if player would collide on new position, if not change position to new position
 	.nokeyws:
@@ -209,6 +264,11 @@ gameControls:
 	.noCollision:
 		inc word [player+6]  ;update animation if moving
 		ret
+  .gamePaused:
+    mov byte [canWalk], 0
+    ret
+    ;cannot move
+
 	
 ;======================================== NEW STUFF ==========================================
 registerInterruptHandlers:
@@ -216,10 +276,14 @@ registerInterruptHandlers:
 	ret
 	
 ;; NEW KEYBOARD EVENT BASED CODE
-pressA db 0
-pressD db 0
-pressW db 0
-pressS db 0
+pressLeft db 0
+pressRight db 0
+pressUp db 0
+pressDown db 0
+pressSpace db 0
+pressL db 0
+
+
 keyboardINTListener: ;interrupt handler for keyboard events
 	pusha	
 		xor bx,bx ; bx = 0: signify key down event
@@ -231,20 +295,28 @@ keyboardINTListener: ;interrupt handler for keyboard events
 		.keyDown:
 		cmp al,0x4b ;left
 		jne .check1         
-			mov byte [cs:pressA], bl ;use cs overwrite because we don't know where the data segment might point to
+			mov byte [cs:pressLeft], bl ;use cs overwrite because we don't know where the data segment might point to
 		.check1:
 		cmp al,0x4d ;right
 		jne .check2
-			mov byte [cs:pressD], bl
+			mov byte [cs:pressRight], bl
 		.check2:
 		cmp al,0x48 ;up
 		jne .check3
-			mov byte [cs:pressW], bl
+			mov byte [cs:pressUp], bl
 		.check3:
 		cmp al,0x50 ;down
 		jne .check4
-			mov byte [cs:pressS], bl
-		.check4:
+			mov byte [cs:pressDown], bl
+    .check4:
+    cmp al,0x39 ;space
+    jne .check5
+      mov byte [cs:pressSpace], bl
+    .check5:
+    cmp al,0x26 ; L
+    jne .check6
+      mov byte [cs:pressL], bl
+		.check6:
 		mov al, 20h ;20h
 		out 20h, al ;acknowledge the interrupt so further interrupts can be handled again 
 	popa ;resume state to not modify something by accident
@@ -253,7 +325,7 @@ keyboardINTListener: ;interrupt handler for keyboard events
 ;using interrupts instread of the BIOS is SUUPER fast which is why we need to delay execution for at least a few ms per gametick to not be too fast
 synchronize:
 	pusha
-		mov si, 20 ; si = time in ms
+		mov si, 15 ; si = time in ms
 		mov dx, si
 		mov cx, si
 		shr cx, 6
@@ -429,11 +501,37 @@ blockCollison:
 	pop cx
 	ret
 	
+
+toggle_inverted:
+  cmp byte [inverted], 0
+  ;direction is inverted so set to normal
+  jne .set_not_inverted
+  ;direction is not inverted so invert
+  .set_inverted:
+    mov byte [inverted], 1
+    ret
+  .set_not_inverted:
+    mov byte [inverted], 0
+  ret
+
+toggle_pause:
+  cmp byte [paused], 0
+  ;game is paused so set to running
+  jne .set_not_paused
+  ;game is not paused so pause
+  .set_paused:
+    mov byte [paused], 1
+    ret
+  .set_not_paused:
+    mov byte [paused], 0
+  ret
+
 %include "buffer.asm"
 
 
 ;game value
-
+paused db 0
+inverted db 0
 appleFound dw 0
 
 ;entity array

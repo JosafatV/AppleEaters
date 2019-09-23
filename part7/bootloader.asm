@@ -29,7 +29,7 @@ start:
 call clearscreen
 mov si, welcomemsg ; loads the address of "msg" into SI register
 call print_string
-call display_message
+;call display_message
 
 ;Initialize Registers
 cli
