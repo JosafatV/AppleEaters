@@ -23,29 +23,20 @@ moved db 0;
 ;Main game loop
 gameLoop:
   
-    cmp byte [pressEsc], 1
-    je escapeGame
+  cmp byte [quit], 1
+  je escapeGame
 
-    cmp byte [pressP], 1
-    jne .noRestartGameCall
-    .restartGameCall:
-        call restartGame
-        jmp init_game
-    .noRestartGameCall:
-
-    cmp word [gamewon_flag],1
-    je gameWon 
-
-    cmp word [gameover_flag],1
-    je gameOver
-
-    cmp word [paused],1
-    je gamePause
-
+  cmp byte [reset], 1
+  je restartGame
   
+  cmp word [gamewon_flag],1
+  je gameWon
 
-  
-    
+  cmp word [gameover_flag],1
+  je gameOver
+
+  cmp word [paused],1
+  je gamePause
 
   call resetBuffer ;reset screen to draw on empty canvas
   
@@ -214,7 +205,7 @@ gameLoop:
     .not_animation:
       mov word [flag_animation], 1
 
-    .won_labels:
+    .won_labels
     mov si, game_restart ;restart image
     mov ax, 40
     mov bx, 52
@@ -240,13 +231,6 @@ call synchronize ;synchronize emulator and real application through delaying
   
 jmp gameLoop
 
-jmp $
-
-escapeGame:
-    call resetBufferBlack
-    call copyBufferOver
-    jmp end
-
 restartGame:
     call resetEntities
     mov byte [pressP], 0
@@ -259,23 +243,45 @@ restartGame:
     call initMap
     jmp gameLoop
 
-    resetEntities:
-        pusha
-            mov cx, (entityArraySize-1)  ; Moves amount to loop
-            .loopEntities:
-            cmp cx, 0
-            je .endRestart
+resetEntities:
+    mov cx, (entityArraySize-1)  ; Moves amount to loop
+    .loopEntities:
+    cmp cx, 0
+    je .endRestart
 
-            mov di, cx
-            imul di, 2
-            add di, entityArray
-            mov word [di], 0
+    mov di, cx
+    imul di, 2
+    add di, entityArray
+    mov word [di], 0
 
-            loop .loopEntities
-        .endRestart:
-        popa
-        ret
+    loop .loopEntities
+    .endRestart:
+    ret
 
+    ; resetEntities:
+    ;     pusha
+    ;         mov cx, (entityArraySize-1)  ; Moves amount to loop
+    ;         .loopEntities:
+    ;         cmp cx, 0
+    ;         je .endRestart
+
+    ;         mov di, cx
+    ;         imul di, 2
+    ;         add di, entityArray
+    ;         ;mov word [di], 0
+
+    ;         dec cx
+    ;         jmp .loopEntities
+    ;     .endRestart:
+    ;     popa
+    ;     ret
+
+escapeGame:
+    call resetBufferBlack
+    call copyBufferOver
+    jmp end
+
+jmp $
 
 ;di = entity cx,dx = xpos,zpos
 drawEntity:
@@ -418,6 +424,22 @@ gameControls:
   mov byte [canWalk], 0
   mov di, snake ;select the player as the main entity for "checkForCollision"
 
+  .check_quit:
+    ;check if game was paused
+    cmp byte [pressEsc], 1
+    ;if it was not pressed continue
+    jne .check_reset
+    ;else toggle
+    mov byte [quit], 1
+
+  .check_reset:
+    ;check if game was paused
+    cmp byte [pressP], 1
+    ;if it was not pressed continue
+    jne .check_pause
+    ;else toggle
+    mov byte [reset], 1
+
   .check_pause:
     ;check if game was paused
     cmp byte [pressL], 1
@@ -438,13 +460,13 @@ gameControls:
 
   .check_movement:
 
-  mov al, byte [pressLeft]
-  add al, byte [pressRight]
-  cmp al, 0
+  ; mov al, byte [pressLeft]
+  ; add al, byte [pressRight]
+  ; cmp al, 0
 
-  mov al, byte [pressLeft]
-  add al, byte [pressRight]
-  cmp al, 0
+  ; mov al, byte [pressLeft]
+  ; add al, byte [pressRight]
+  ; cmp al, 0
 
   mov al, byte [pressLeft]
   add al, byte [pressRight]
@@ -536,7 +558,7 @@ gameControls:
 registerInterruptHandlers:
   mov [0x0024], dword keyboardINTListener ;implements keyboardListener
   ret
-  
+
 ;; NEW KEYBOARD EVENT BASED CODE
 pressLeft db 0
 pressRight db 0
@@ -544,8 +566,8 @@ pressUp db 0
 pressDown db 0
 pressSpace db 0
 pressL db 0
-pressEsc db 0
 pressP db 0
+pressEsc db 0
 
 
 keyboardINTListener: ;interrupt handler for keyboard events
@@ -584,9 +606,12 @@ keyboardINTListener: ;interrupt handler for keyboard events
     cmp al,0x01 ; Esc
     jne .check7
       mov byte [cs:pressEsc], bl
+      ;jmp end
     .check7:
     cmp al,0x19 ; P
     jne .check8
+      ;CODE TO RESTART
+      ;mov word [gamewon_flag], 1
       mov byte [cs:pressP], bl
     .check8:
     mov al, 20h ;20h
@@ -858,6 +883,16 @@ pusha
 popa
 ret
 
+end:
+  ;CODE TO END PROGRAM     
+    mov ax, 0x1000
+    mov ax, ss
+    mov sp, 0xf000
+    mov ax, 0x5307
+    mov bx, 0x0001
+    mov cx, 0x0003
+    int 15h
+
 %include "buffer.asm"
 
 
@@ -865,6 +900,8 @@ ret
 paused db 0
 gameover_flag db 0
 gamewon_flag db 0
+reset db 0
+quit db 0
 inverted db 0
 appleFound dw 0
 flag_animation dw 0
@@ -987,25 +1024,19 @@ num_7 incbin "img/7.bin"
 num_8 incbin "img/8.bin"
 num_9 incbin "img/9.bin"
 score incbin "img/score.bin"
-;move incbin "img/move.bin"
-;exit_key incbin "img/exit_key.bin"
-;pause_key incbin "img/pause_key.bin"
-;invert_key incbin "img/invert_key.bin"
+; move incbin "img/move.bin"
+; exit_key incbin "img/exit_key.bin"
+; pause_key incbin "img/pause_key.bin"
+; invert_key incbin "img/invert_key.bin"
 
 boxImg_0         incbin "img/block.bin"
 tileImg_0        incbin "img/grass.bin"
 
 ASCIImap          incbin "img/map.bin"
 
-end:
-  ;CODE TO END PROGRAM     
-    mov ax, 0x1000
-    mov ax, ss
-    mov sp, 0xf000
-    mov ax, 0x5307
-    mov bx, 0x0001
-    mov cx, 0x0003
-    int 15h
+; end:
+;   ;CODE TO END PROGRAM  
+;   hlt
 
 %assign usedMemory ($-$$)
 %assign usableMemory (512*32)
