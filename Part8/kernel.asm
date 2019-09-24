@@ -270,22 +270,28 @@ checkForCollision:
             cmp ah, 'L' ; Compare to lemon
             je .found_lemon
             jmp .found_none ; found nothing, do nothing
+
             .found_apple:
             inc word [appleFound]
             inc word [snake_length]
+            cmp word [appleFound], 15
+            jl .found_none
+            mov word [gamewon_flag], 1
             jmp .found_none
+
             .found_orange:
             dec word [snake_length]
             cmp word [snake_length], 0
             jge .found_none
             mov word [gameover_flag], 1
             jmp .found_none
+
             .found_lemon:
             add word [snake_length], 3
             jmp .found_none
             .found_none:
 
-            
+
 
             mov word [si], 0
 
