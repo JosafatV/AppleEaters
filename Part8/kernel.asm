@@ -21,6 +21,9 @@ moved db 0;
 ;Main game loop
 gameLoop:
 
+  cmp word [paused],1
+  je gamePause
+
   call resetBuffer ;reset screen to draw on empty canvas
   
   ;MODULAR DRAWING CODE
@@ -105,6 +108,51 @@ gameLoop:
 
     jmp .loop_tail
 
+  gamePause:
+    call resetBufferBlack
+    mov si, game_paused ;paused image
+    mov ax, 55
+    mov bx, 45
+    call drawImage
+    mov si, game_return ;return image
+    mov ax, 40
+    mov bx, 52
+    call drawImage
+    jmp done_drawing
+
+  gameOver:
+    call resetBufferBlack
+    mov si, game_over ;over image
+    mov ax, 57
+    mov bx, 45
+    call drawImage
+    mov si, game_restart ;restart image
+    mov ax, 40
+    mov bx, 52
+    call drawImage
+    mov si, game_exit ;exit image
+    mov ax, 44
+    mov bx, 59
+    call drawImage
+    jmp done_drawing
+
+  gameWon:
+    call resetBufferBlack
+    mov si, game_congrats ;congrats image
+    mov ax, 40
+    mov bx, 45
+    call drawImage
+    mov si, game_restart ;restart image
+    mov ax, 40
+    mov bx, 52
+    call drawImage
+    mov si, game_exit ;exit image
+    mov ax, 44
+    mov bx, 59
+    call drawImage
+    jmp done_drawing
+
+
 
   done_drawing:
 
@@ -113,9 +161,9 @@ gameLoop:
   mov word [snake_direction_x], 0
   mov word [snake_direction_y], 0
   
-  call gameControls ;handle control logic
+call gameControls ;handle control logic
   
-  call synchronize ;synchronize emulator and real application through delaying
+call synchronize ;synchronize emulator and real application through delaying
   
 jmp gameLoop
 
@@ -634,16 +682,29 @@ toggle_inverted:
   ret
 
 toggle_pause:
+pusha
   cmp byte [paused], 0
   ;game is paused so set to running
   jne .set_not_paused
   ;game is not paused so pause
   .set_paused:
     mov byte [paused], 1
+
+    ; mov si, game_paused
+    ; mov ax, [snake_positions_x]
+    ; sub ax, [snake_head_posx]
+    ; mov bx, [snake_positions_y]
+    ; sub bx, [snake_head_posy]
+    ; call drawImage
+
+
+    popa
     ret
   .set_not_paused:
     mov byte [paused], 0
-  ret
+
+popa
+ret
 
 %include "buffer.asm"
 
@@ -748,7 +809,7 @@ ASCIImap          incbin "img/map.bin"
 
 
 %assign usedMemory ($-$$)
-%assign usableMemory (512*16)
+%assign usableMemory (512*32)
 %warning [usedMemory/usableMemory] Bytes used
-times (512*16)-($-$$) db 0 ;kernel must have size multiple of 512 so let's pad it to the correct size
+times (512*32)-($-$$) db 0 ;kernel must have size multiple of 512 so let's pad it to the correct size
 ;times (512*1000)-($-$$) db 0 ;toggle this to use in bochs
