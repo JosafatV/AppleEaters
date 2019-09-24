@@ -242,48 +242,52 @@ checkForCollision:
             ;mov cx, [di+2]         ;set new x pos to current x pos => no movement
             ;mov dx, [di+4]         ;set new z pos to current z pos => no movement
 
-;            mov ah, BYTE [bx+8]
-;            cmp ah, 1 ; Compare to apple 
-;            je .found_apple
-;            cmp ah, 'O' ; Compare to orange
-;            je .found_orange
-;            cmp ah, 'L' ; Compare to lemon
-;            je .found_lemon
-;            jmp .found_none ; found nothing, do nothing
-;            .found_apple:
-;            inc word [appleFound]
-;            jmp .found_none
-;            .found_orange:
-;            add word [appleFound], 3
-;            jmp .found_none
-;            .found_lemon:
-;            dec word [appleFound]
-;            jmp .found_none
-;            .found_none:
-
-            xor ax, ax
-            ;add ax, bx;word [bx+8]
             lea bx, [bx+8]
-            mov ax, [bx]
-            ;mov ax,1 
-;            call resetBuffer2
-;            call copyBufferOver
-;            call waits
-            add word [appleFound], ax
+            mov ax, [bx] 
+            ;mov ax, [bx+8]
+            cmp ah, 'A' ; Compare to apple 
+            je .found_apple
+            cmp ah, 'O' ; Compare to orange
+            je .found_orange
+            cmp ah, 'L' ; Compare to lemon
+            je .found_lemon
+            jmp .found_none ; found nothing, do nothing
+            .found_apple:
+            inc word [appleFound]
+            jmp .found_none
+            .found_orange:
+            add word [appleFound], 3
+            jmp .found_none
+            .found_lemon:
+            dec word [appleFound]
+            jmp .found_none
+            .found_none:
+
+            ;xor ax, ax
+            ;add ax, bx;word [bx+8]
+            ;lea bx, [bx+8]
+            ;mov ax, [bx] 
+            ;call resetBuffer2
+            ;call copyBufferOver
+            ;call waits
+            ;add word [appleFound], ax
             
             ;compare end of game 
             cmp word [appleFound], 3
-            jne .no_limit_apple
-            
+            ;jne .no_limit_apple
+            jl .no_limit_apple
+
+            ; TEST IF IT WORKS
             mov ax, 23
             call resetBuffer2
             call copyBufferOver
             call waits
+            ; ----------------------
+
             mov word [appleFound], 0
             .no_limit_apple:
 
             inc word [snake_length]
-
             mov word [si], 0
             ;ding ding count found
 
@@ -314,7 +318,7 @@ checkForCollision:
         ;Y
         mov bp, word [di+4]
         mov word [tmp_old_y], bp
-        
+
         mov word [di+2] ,cx  ;update x pos
         mov word [di+4] ,dx  ;update y pos
     popa                 ;reload old register state
@@ -511,31 +515,29 @@ addEntity:
     pusha
     mov bx, cx
     mov di, entityArray
-
-    xor ax, ax
-    mov cx, (entityArraySize-1)
-    repne scasw                 ; iterate through entity array until empty stop is found
-    sub di, 2
-    test ecx, ecx               ; abort here if at the end of the the entity array
-    je .failed
-    sub cx, (entityArraySize-1) ; calculate index within the array by using the amount of iterated entires
-    neg cx
-    ;shl cx, 3
-    imul cx, 10 ;CHANGED!!! 10 bytes
-    add cx, entityArrayMem
-    mov [di], cx   ; saves address
-    mov di, cx
-    mov [di], si
-    mov [di+2], bx ; set x position of the entity
-    mov [di+4], dx ; set y position of the entity
-    xor bx, dx     ; "randomise" initial animation position
-    mov [di+6], bx ; set animation state
-    mov bx, 1
-    ; Code to add a fruit value
-    ; mov [di+8], bx ;
-
+    push ax
+      xor ax, ax
+      mov cx, (entityArraySize-1)
+      repne scasw                 ; iterate through entity array until empty stop is found
+      sub di, 2
+      test ecx, ecx               ; abort here if at the end of the the entity array
+      je .failed
+      sub cx, (entityArraySize-1) ; calculate index within the array by using the amount of iterated entires
+      neg cx
+      ;shl cx, 3
+      imul cx, 10 ;CHANGED!!! 10 bytes
+      add cx, entityArrayMem
+      mov [di], cx   ; saves address
+      mov di, cx
+      mov [di], si
+      mov [di+2], bx ; set x position of the entity
+      mov [di+4], dx ; set y position of the entity
+      xor bx, dx     ; "randomise" initial animation position
+      mov [di+6], bx ; set animation state
+    pop ax
+    ; Code to add a fruit value as ax was saved, ah has id byte from map iterate
     lea bx, [di+8]
-    mov word [bx], 1
+    mov word [bx], ax;1
     mov ax, [bx]
 ;    call resetBuffer2
 ;    call copyBufferOver
