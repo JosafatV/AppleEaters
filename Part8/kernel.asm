@@ -161,7 +161,7 @@ gameLoop:
     mov bx, 45
     call drawImage
     mov si, game_return ;return image
-    mov ax, 40
+    mov ax, 48
     mov bx, 52
     call drawImage
     jmp done_drawing
@@ -371,7 +371,7 @@ gameControls:
 
   .check_pause:
     ;check if game was paused
-    cmp byte [pressSpace], 1
+    cmp byte [pressL], 1
     ;if it was not pressed continue
     jne .check_inverted
     ;else toggle
@@ -380,7 +380,7 @@ gameControls:
 
   .check_inverted:
     ;check if movement is inverted
-    cmp byte [pressL], 1
+    cmp byte [pressSpace], 1
     ;if it was not pressed continue
     jne .check_movement
     ;else toggle
