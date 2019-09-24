@@ -291,8 +291,6 @@ checkForCollision:
             jmp .found_none
             .found_none:
 
-
-
             mov word [si], 0
 
             jmp .noMapCollision
