@@ -258,12 +258,8 @@ graphicMemory dw 0xA000
 screenPos dw 0x0500 ;double buffer will be at this address
 
 
-game_over incbin "img/game_over.bin"
-game_exit incbin "img/exit.bin"
-game_restart incbin "img/restart.bin"
-game_return incbin "img/return.bin"
-game_paused incbin "img/paused.bin"
-game_congrats incbin "img/congratulations_0.bin"
+
+
 ;game_congrats_1 incbin "img/congratulations_1.bin"
 
 
