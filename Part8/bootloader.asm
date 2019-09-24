@@ -85,7 +85,7 @@ keyboardINTListener: ;interrupt handler for keyboard events
     jnc .keyDown
       dec bx ; bx = 1: key up event
     .keyDown:
-    cmp al,0x39 ;space
+    cmp al,0x1c ;enter
     jne .check
     	call load_game
     .check:
@@ -116,7 +116,7 @@ print:
      ret
 
 errormsg db "Failed to load...",0x0D, 0x0A, 0 
-welcomemsg db "Welcome to AppleEaters! Please press space",0x0D, 0x0A, 0
+welcomemsg db "Welcome to AppleEaters! Please press enter",0x0D, 0x0A, 0
 
 secondcount db 2
 times 510-($-$$) db 0

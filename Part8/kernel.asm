@@ -73,7 +73,7 @@ gameLoop:
 
     .loop_tail:
       cmp cx, word [snake_length] ;if it ended drawing snake
-      je done_drawing
+      je draw_score
       ;save this node position x
       mov bx, cx
       add bx, bx ; 2*cx index
@@ -115,6 +115,44 @@ gameLoop:
       inc cx ;++increase tail drawn
 
     jmp .loop_tail
+
+  draw_score:
+    mov si, score ;score label
+    mov ax, 125
+    mov bx, 2
+    call drawImage
+
+    cmp word [appleFound], 10
+    jge .set_first_digit_1
+
+    .set_first_digit_0:
+    mov si, num_0
+    mov ax, 150
+    mov bx, 2
+    call drawImage
+    ;second digit
+    mov bx, word [appleFound]
+    add bx, bx 
+    mov si, [nums+bx]
+    mov ax, 154
+    mov bx, 2
+    call drawImage
+    jmp done_drawing
+
+    .set_first_digit_1:
+    mov si, num_1
+    mov ax, 150
+    mov bx, 2
+    call drawImage
+    ;second digit
+    mov bx, word [appleFound]
+    sub bx, 10 ;we just want the first digit
+    add bx, bx 
+    mov si, [nums+bx]
+    mov ax, 154
+    mov bx, 2
+    call drawImage
+    jmp done_drawing
 
   gamePause:
     call resetBufferBlack
@@ -851,6 +889,18 @@ lemonImg:
   dw lemon_1       ;frames
   dw 0            ;zero end frame
 
+nums:
+  dw num_0
+  dw num_1
+  dw num_2
+  dw num_3
+  dw num_4
+  dw num_5
+  dw num_6
+  dw num_7
+  dw num_8
+  dw num_9
+
 snake_head_img_left  incbin "img/snake_head_left.bin"
 snake_head_img_up  incbin "img/snake_head_up.bin"
 snake_head_img_down  incbin "img/snake_head_down.bin"
@@ -868,6 +918,18 @@ orange_2 incbin "img/orange_2.bin"
 lemon_0 incbin "img/lemon_0.bin"
 lemon_1 incbin "img/lemon_1.bin"
 lemon_2 incbin "img/lemon_2.bin"
+
+num_0 incbin "img/0.bin"
+num_1 incbin "img/1.bin"
+num_2 incbin "img/2.bin"
+num_3 incbin "img/3.bin"
+num_4 incbin "img/4.bin"
+num_5 incbin "img/5.bin"
+num_6 incbin "img/6.bin"
+num_7 incbin "img/7.bin"
+num_8 incbin "img/8.bin"
+num_9 incbin "img/9.bin"
+score incbin "img/score.bin"
 
 boxImg_0         incbin "img/block.bin"
 tileImg_0        incbin "img/grass.bin"
