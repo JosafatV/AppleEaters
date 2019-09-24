@@ -263,7 +263,8 @@ game_exit incbin "img/exit.bin"
 game_restart incbin "img/restart.bin"
 game_return incbin "img/return.bin"
 game_paused incbin "img/paused.bin"
-game_congrats incbin "img/congratulations.bin"
+game_congrats incbin "img/congratulations_0.bin"
+;game_congrats_1 incbin "img/congratulations_1.bin"
 
 
 
