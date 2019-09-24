@@ -308,8 +308,6 @@ checkForCollision:
             jge .continue
             mov word [gameover_flag], 1
           
-            
-
             ; ----------------------
 
             .continue
