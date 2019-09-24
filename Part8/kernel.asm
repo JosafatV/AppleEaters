@@ -260,12 +260,13 @@ checkForCollision:
             jmp .found_none ; found nothing, do nothing
             .found_apple:
             inc word [appleFound]
+            inc word [snake_length]
             jmp .found_none
             .found_orange:
-            add word [appleFound], 3
+            dec word [snake_length]
             jmp .found_none
             .found_lemon:
-            dec word [appleFound]
+            add word [snake_length], 3
             jmp .found_none
             .found_none:
 
@@ -290,7 +291,7 @@ checkForCollision:
             ; call waits
             
 
-            dec word [snake_length]            
+            ;dec word [snake_length]            
             cmp word [snake_length], 0
             jge .continue
             mov word [gameover_flag], 1
@@ -304,7 +305,7 @@ checkForCollision:
             mov word [appleFound], 0
             .no_limit_apple:
 
-            inc word [snake_length]
+            ;inc word [snake_length]
             mov word [si], 0
             ;ding ding count found
 
@@ -562,6 +563,7 @@ addEntity:
     pop ax
     ; Code to add a fruit value as ax was saved, ah has id byte from map iterate
     lea bx, [di+8]
+    mov al, 0
     mov word [bx], ax;1
     mov ax, [bx]
 ;    call resetBuffer2
