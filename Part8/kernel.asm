@@ -23,20 +23,29 @@ moved db 0;
 ;Main game loop
 gameLoop:
   
-  cmp word [gamewon_flag],1
-  je gameWon
+    cmp byte [pressEsc], 1
+    je escapeGame
 
-  cmp word [gameover_flag],1
-  je gameOver
+    cmp byte [pressP], 1
+    jne .noRestartGameCall
+    .restartGameCall:
+        call restartGame
+        jmp init_game
+    .noRestartGameCall:
 
-  cmp word [paused],1
-  je gamePause
+    cmp word [gamewon_flag],1
+    je gameWon 
 
-  cmp byte [pressEsc], 1
-  je escapeGame
+    cmp word [gameover_flag],1
+    je gameOver
 
-  cmp byte [pressP], 1
-  je restartGame
+    cmp word [paused],1
+    je gamePause
+
+  
+
+  
+    
 
   call resetBuffer ;reset screen to draw on empty canvas
   
@@ -234,31 +243,38 @@ jmp gameLoop
 jmp $
 
 escapeGame:
-    ;call resetBufferBlack
-    ;call copyBufferOver
+    call resetBufferBlack
+    call copyBufferOver
     jmp end
 
 restartGame:
+    call resetEntities
     mov byte [pressP], 0
     mov word [snake_length], 0
     mov word [gamewon_flag],0
     mov word [gameover_flag],0
     mov word [paused],0
-    call resetEntities
-    jmp init_game
-    
+    mov byte [moved],0
+    mov word [appleFound],0
+    call initMap
+    jmp gameLoop
+
     resetEntities:
-    
-    pusha
-        mov cx, (entityArraySize-1)  ; Moves amount to loop
-        .loopEntities:
-        mov di, cx
-        imul di, 2
-        add di, entityArray
-        mov word [di], 0
-        loop .loopEntities
-    popa
-    ret
+        pusha
+            mov cx, (entityArraySize-1)  ; Moves amount to loop
+            .loopEntities:
+            cmp cx, 0
+            je .endRestart
+
+            mov di, cx
+            imul di, 2
+            add di, entityArray
+            mov word [di], 0
+
+            loop .loopEntities
+        .endRestart:
+        popa
+        ret
 
 
 ;di = entity cx,dx = xpos,zpos
