@@ -276,6 +276,9 @@ checkForCollision:
             jmp .found_none
             .found_orange:
             dec word [snake_length]
+            cmp word [snake_length], 0
+            jge .found_none
+            mov word [gameover_flag], 1
             jmp .found_none
             .found_lemon:
             add word [snake_length], 3
@@ -317,7 +320,6 @@ checkForCollision:
             .no_limit_apple:
             ;inc word [snake_length]
             mov word [si], 0
-            ;ding ding count found
 
             jmp .noMapCollision
             .whileSkip:
