@@ -276,50 +276,18 @@ checkForCollision:
             jmp .found_none
             .found_orange:
             dec word [snake_length]
+            cmp word [snake_length], 0
+            jge .found_none
+            mov word [gameover_flag], 1
             jmp .found_none
             .found_lemon:
             add word [snake_length], 3
             jmp .found_none
             .found_none:
 
-            ;xor ax, ax
-            ;add ax, bx;word [bx+8]
-            ;lea bx, [bx+8]
-            ;mov ax, [bx] 
-            ;call resetBuffer2
-            ;call copyBufferOver
-            ;call waits
-            ;add word [appleFound], ax
-            
-            ;compare end of game 
-            cmp word [appleFound], 3
-            ;jne .no_limit_apple
-            jl .no_limit_apple
-
-            ; TEST IF IT WORKS
-            ; mov ax, 0xC3
-            ; call resetBuffer2
-            ; call copyBufferOver
-            ; call waits
             
 
-            ;dec word [snake_length]            
-            cmp word [snake_length], 0
-            jge .continue
-            mov word [gameover_flag], 1
-          
-            
-
-            ; ----------------------
-
-            .continue
-
-            mov word [appleFound], 0
-
-            .no_limit_apple:
-            ;inc word [snake_length]
             mov word [si], 0
-            ;ding ding count found
 
             jmp .noMapCollision
             .whileSkip:
