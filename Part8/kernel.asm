@@ -146,10 +146,22 @@ gameLoop:
 
   gameWon:
     call resetBufferBlack
-    mov si, game_congrats ;congrats image
-    mov ax, 40
-    mov bx, 45
-    call drawImage
+
+    cmp word [flag_animation], 0
+    je .not_animation
+
+    .animation:
+      mov si, game_congrats ;congrats image
+      mov ax, 40
+      mov bx, 45
+      call drawImage
+      mov word [flag_animation], 0
+      jmp .won_labels
+
+    .not_animation:
+      mov word [flag_animation], 1
+
+    .won_labels
     mov si, game_restart ;restart image
     mov ax, 40
     mov bx, 52
@@ -303,8 +315,8 @@ checkForCollision:
             .continue
 
             mov word [appleFound], 0
-            .no_limit_apple:
 
+            .no_limit_apple:
             ;inc word [snake_length]
             mov word [si], 0
             ;ding ding count found
@@ -795,6 +807,7 @@ gameover_flag db 0
 gamewon_flag db 0
 inverted db 0
 appleFound dw 0
+flag_animation dw 0
 
 
 ;entity array
