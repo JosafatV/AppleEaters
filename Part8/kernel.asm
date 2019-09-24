@@ -2,7 +2,7 @@ org 0x8000
 bits 16 
 
 ;precompiler constant
-%define entityArraySize 100
+%define entityArraySize 16
 ;Let's begin by going into graphic mode
 call initGraphics
 
@@ -10,6 +10,8 @@ call initGraphics
 call registerInterruptHandlers
 
 init_game:
+
+mov word [appleFound], 0
 
 ;init map
 call initMap
@@ -93,71 +95,108 @@ drawEntity:
 ;di = entity, cx = new_xpos, dx = new_zpos, bp = new animation
 ;fixed for modular entity system
 checkForCollision:
-  pusha                       ;save current state
-  mov si, entityArray         ;set si to entityArray
-  .whileLoop:
-  mov bx, word [si]   ;read entityArray entry
-  test bx, bx         ;if entry is zero => end of array
-  jz .whileSkip
-  cmp bx, di          ;if entity is equal to di => next entity to not collide with it self
-  jz .whileSkip
-  
-  mov ax, word [bx+2] ;ax = entity x
-  sub ax, 7           ;subtract 8 because of hitbox
-  cmp ax, cx ; (entityX-8 <= playerX)
-    jg .whileSkip
-    
-  mov ax, word [bx+2] ;ax = entity x
-  add ax, 7           ;add 8 because of hitbox
-  cmp ax, cx ; (entityX+8 > playerX)
-    jle .whileSkip
+    pusha                       ;save current state
+        mov si, entityArray         ;set si to entityArray
+        .whileLoop:
+            mov bx, word [si]   ;read entityArray entry
 
-  mov ax, word [bx+4] ;ax = entity z
-  sub ax, 7          ;subtract 10 because of hitbox
-  cmp ax, dx ; (entityZ-10 <= playerZ)
-    jg .whileSkip
-    
-  mov ax, word [bx+4] ;ax = entity z
-  add ax, 7           ;subtract 9 because of hitbox
-  cmp ax, dx ; (entityZ+9 > playerZ)
-    jle .whileSkip
-    
-  ;if we reach this point => actual collision
-  ;mov cx, [di+2]         ;set new x pos to current x pos => no movement
-  ;mov dx, [di+4]         ;set new z pos to current z pos => no movement
-  
-  mov word [si], 0
-  inc word [appleFound]
+            test bx, bx         ;if entry is zero => end of array
+            jz .whileSkip
 
-  ;compare end of game 
-  cmp word [appleFound], 3
-  ;je init_game
-  
-  ;ding ding count found
-  
-  jmp .noMapCollision
-  .whileSkip:
-  add si, 2           ;set si to the next entry in the entityArray
-  cmp si, entityArray+((entityArraySize-1)*2)
-  jl .whileLoop
-  .whileEnd:
+            cmp bx, di          ;if entity is equal to di => next entity to not collide with it self
+            jz .whileSkip
 
-  pusha
-  mov si, cx
-  mov bx, dx
-  call collideMap
-  popa
-  jnc .noMapCollision
-    ;if we reach this point => actual collision
-    mov cx, [di+2]         ;set new x pos to current x pos => no movement
-    mov dx, [di+4]         ;set new z pos to current z pos => no movement
-  .noMapCollision:
-  mov byte [canWalk], 1
-  mov word [di]   ,bp  ;update the animation in use
-  mov word [di+2] ,cx  ;update x pos
-  mov word [di+4] ,dx  ;update y pos
-  popa                 ;reload old register state
-  ret
+            mov ax, word [bx+2] ;ax = entity x
+            sub ax, 7           ;subtract 8 because of hitbox
+            cmp ax, cx ; (entityX-8 <= playerX)
+            jg .whileSkip
+
+            mov ax, word [bx+2] ;ax = entity x
+            add ax, 7           ;add 8 because of hitbox
+            cmp ax, cx ; (entityX+8 > playerX)
+            jle .whileSkip
+
+            mov ax, word [bx+4] ;ax = entity z
+            sub ax, 7          ;subtract 10 because of hitbox
+            cmp ax, dx ; (entityZ-10 <= playerZ)
+            jg .whileSkip
+
+            mov ax, word [bx+4] ;ax = entity z
+            add ax, 6           ;subtract 9 because of hitbox
+            cmp ax, dx ; (entityZ+9 > playerZ)
+            jle .whileSkip
+
+            ;if we reach this point => actual collision
+            ;mov cx, [di+2]         ;set new x pos to current x pos => no movement
+            ;mov dx, [di+4]         ;set new z pos to current z pos => no movement
+
+;            mov ah, BYTE [bx+8]
+;            cmp ah, 1 ; Compare to apple 
+;            je .found_apple
+;            cmp ah, 'O' ; Compare to orange
+;            je .found_orange
+;            cmp ah, 'L' ; Compare to lemon
+;            je .found_lemon
+;            jmp .found_none ; found nothing, do nothing
+;            .found_apple:
+;            inc word [appleFound]
+;            jmp .found_none
+;            .found_orange:
+;            add word [appleFound], 3
+;            jmp .found_none
+;            .found_lemon:
+;            dec word [appleFound]
+;            jmp .found_none
+;            .found_none:
+
+            xor ax, ax
+            ;add ax, bx;word [bx+8]
+            lea bx, [bx+8]
+            mov ax, [bx]
+            ;mov ax,1 
+;            call resetBuffer2
+;            call copyBufferOver
+;            call waits
+            add word [appleFound], ax
+            
+            ;compare end of game 
+            cmp word [appleFound], 3
+            jne .no_limit_apple
+            
+            mov ax, 23
+            call resetBuffer2
+            call copyBufferOver
+            call waits
+            mov word [appleFound], 0
+            .no_limit_apple:
+
+
+            mov word [si], 0
+            ;ding ding count found
+
+            jmp .noMapCollision
+            .whileSkip:
+            add si, 2           ;set si to the next entry in the entityArray
+            cmp si, entityArray+((entityArraySize-1)*2) ; I think it is if it reached the end
+            jl .whileLoop
+        .whileEnd:
+
+        pusha
+            mov si, cx
+            mov bx, dx
+            call collideMap
+        popa
+        jnc .noMapCollision
+        ;if we reach this point => actual collision
+        mov cx, [di+2]         ;set new x pos to current x pos => no movement
+        mov dx, [di+4]         ;set new z pos to current z pos => no movement
+        .noMapCollision:
+        mov byte [canWalk], 1
+        mov word [di]   ,bp  ;update the animation in use
+        mov word [di+2] ,cx  ;update x pos
+        mov word [di+4] ,dx  ;update y pos
+    popa                 ;reload old register state
+    ret
 
 canWalk db 0
 gameControls:
@@ -333,30 +372,43 @@ synchronize:
 ;cx, dx = xpos, zpos, si = animation
 ;eax == 0 => success, else failed
 addEntity:
-  pusha
-  mov bx, cx
-  mov di, entityArray
-  xor ax, ax
-  mov cx, (entityArraySize-1)
-  repne scasw                 ; iterate through entity array until empty stop is found
-  sub di, 2
-  test ecx, ecx               ; abort here if at the end of the the entity array
-  je .failed
-  sub cx, (entityArraySize-1) ; calculate index within the array by using the amount of iterated entires
-  neg cx
-    shl cx, 3
-  add cx, entityArrayMem
-  mov [di], cx
-  mov di, cx
-  mov [di], si
-  mov [di+2], bx ; set x position of the entity
-  mov [di+4], dx ; set y position of the entity
-  xor bx, dx     ; "randomise" initial animation position
-  mov [di+6], bx ; set animation state
-  popa
-  xor eax, eax   ; return 0 if successfully added
-  ret
-  .failed:
+    pusha
+    mov bx, cx
+    mov di, entityArray
+
+    xor ax, ax
+    mov cx, (entityArraySize-1)
+    repne scasw                 ; iterate through entity array until empty stop is found
+    sub di, 2
+    test ecx, ecx               ; abort here if at the end of the the entity array
+    je .failed
+    sub cx, (entityArraySize-1) ; calculate index within the array by using the amount of iterated entires
+    neg cx
+    ;shl cx, 3
+    imul cx, 10 ;CHANGED!!! 10 bytes
+    add cx, entityArrayMem
+    mov [di], cx   ; saves address
+    mov di, cx
+    mov [di], si
+    mov [di+2], bx ; set x position of the entity
+    mov [di+4], dx ; set y position of the entity
+    xor bx, dx     ; "randomise" initial animation position
+    mov [di+6], bx ; set animation state
+    mov bx, 1
+    ; Code to add a fruit value
+    ; mov [di+8], bx ;
+
+    lea bx, [di+8]
+    mov word [bx], 1
+    mov ax, [bx]
+;    call resetBuffer2
+;    call copyBufferOver
+;    call waits
+
+    popa
+    xor eax, eax   ; return 0 if successfully added
+    ret
+    .failed:
     popa
     xor eax, eax
     inc eax       ; return 1 if failed to find a place for the entity
@@ -587,7 +639,7 @@ box_AnimC dw 0               ;animation counter
 
 ;other entity structures:
 entityArrayMem:
-  resw entityArraySize*4
+  resw 5*entityArraySize
   
 boxImg:
   dw 1            ;time per frames

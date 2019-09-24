@@ -8,6 +8,19 @@ initGraphics:
 	int  0x10
 	ret
 
+;using interrupts instread of the BIOS is SUUPER fast which is why we need to delay execution for at least a few ms per gametick to not be too fast
+waits:
+	pusha
+		mov si, 2000 ; si = time in ms
+		mov dx, si
+		mov cx, si
+		shr cx, 6
+		shl dx, 10
+		mov ah, 86h
+		int 15h ;cx,dx sleep time in microseconds - cx = high word, dx = low word
+	popa
+	ret
+
 ;resets screen to full black
 resetBuffer:
 	pusha
@@ -16,6 +29,18 @@ resetBuffer:
 	mov ax, 0x0303 ;this paints the background green
 	mov di, [screenPos]
 	rep stosw
+	rep stosw
+	popa
+	ret
+
+;resets screen to full black
+resetBuffer2:
+	pusha
+	mov cx, 160*120/2 ; divide by 2 because it cant fit in 16 bits
+	;xor ax, ax ;this will make the background black
+	;mov ax, 0x0303 ;this paints the background green
+	mov di, [screenPos]
+	rep stosb
 	popa
 	ret
 
@@ -55,8 +80,8 @@ resetBuffer:
  copyBufferOver:
  	pusha
  	push es
-     mov es, word [graphicMemory]
-     xor di, di
+	mov es, word [graphicMemory]
+	xor di, di
  	mov cx, 200
  	.loop: ; loop for all y
  		mov dx, cx
