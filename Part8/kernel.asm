@@ -2,7 +2,8 @@ org 0x8000
 bits 16 
 
 ;precompiler constant
-%define entityArraySize 16
+%define entityArraySize 100
+%define snake_max_size 20
 ;Let's begin by going into graphic mode
 call initGraphics
 
@@ -16,8 +17,14 @@ mov word [appleFound], 0
 ;init map
 call initMap
 
+
+moved db 0;
+
 ;Main game loop
 gameLoop:
+
+  cmp word [paused],1
+  je gamePause
 
   call resetBuffer ;reset screen to draw on empty canvas
   
@@ -39,21 +46,126 @@ gameLoop:
   jl .nextEntity
   
   call drawMap
+
+  cmp word [moved], 0
+  je done_drawing
   
   ; PLAYER DRAWING CODE
   mov si, [snake_head_sprite]   ;get animation
 
-  mov ax, 160/2 - 8/2 - 1      ;center player image CHANGED
-  mov bx, 100/2 - 8/2 - 1     ;center player image CHANGED
+  mov ax, 75;160/2 - 8/2 - 1      ;center player image CHANGED 
+  mov bx, 45;100/2 - 8/2 - 1     ;center player image CHANGED
 
   call drawImage
   ; END OF PLAYER DRAWING CODE
 
+   ; PLAYER DRAWING CODE
+
+  tail:
+    mov si, [snake_body_sprite] ;image of tail
+    mov cx, 0 ;counter for tail length
+
+    .loop_tail:
+      cmp cx, word [snake_length] ;if it ended drawing snake
+      je done_drawing
+      ;save this node position x
+      mov bx, cx
+      add bx, bx ; 2*cx index
+
+      mov ax, word [snake_positions_x+bx]
+      mov word [tmp_old_x_2], ax
+
+      ;save this node position y
+      mov ax, word [snake_positions_y+bx]
+      mov word [tmp_old_y_2], ax
+
+      ;get position from front node x
+      mov ax, word [tmp_old_x]
+      mov word [snake_positions_x+bx], ax ;index according to position
+
+      ;get position from front node y
+      mov ax, word [tmp_old_y]
+      mov word [snake_positions_y+bx], ax ;index according to position
+
+      ;sets tmp_old to old position of this
+      mov ax, word [tmp_old_x_2]
+      mov word [tmp_old_x], ax
+
+      ;sets tmp_old to old position of this
+      mov ax, word [tmp_old_y_2]
+      mov word [tmp_old_y], ax
+
+      mov ax, word [snake_positions_x+bx]
+      sub ax, word [snake_head_posx]   ;subtract the position of the snake_head_posx from the x position
+      add ax, 75    ;relative to screen image drawing code for x position CHANGED
+
+      mov bx, word [snake_positions_y+bx]
+      sub bx, word [snake_head_posy]   ;subtract the position of the snake_head_posx from the z position
+      add bx, 45  ;relative to screen image drawing code for z position CHANGED
+
+      .draw:
+
+      call drawImage
+      inc cx ;++increase tail drawn
+
+    jmp .loop_tail
+
+  gamePause:
+    call resetBufferBlack
+    mov si, game_paused ;paused image
+    mov ax, 55
+    mov bx, 45
+    call drawImage
+    mov si, game_return ;return image
+    mov ax, 40
+    mov bx, 52
+    call drawImage
+    jmp done_drawing
+
+  gameOver:
+    call resetBufferBlack
+    mov si, game_over ;over image
+    mov ax, 57
+    mov bx, 45
+    call drawImage
+    mov si, game_restart ;restart image
+    mov ax, 40
+    mov bx, 52
+    call drawImage
+    mov si, game_exit ;exit image
+    mov ax, 44
+    mov bx, 59
+    call drawImage
+    jmp done_drawing
+
+  gameWon:
+    call resetBufferBlack
+    mov si, game_congrats ;congrats image
+    mov ax, 40
+    mov bx, 45
+    call drawImage
+    mov si, game_restart ;restart image
+    mov ax, 40
+    mov bx, 52
+    call drawImage
+    mov si, game_exit ;exit image
+    mov ax, 44
+    mov bx, 59
+    call drawImage
+    jmp done_drawing
+
+
+
+  done_drawing:
+
   call copyBufferOver ;draw frame to screen
+
+  mov word [snake_direction_x], 0
+  mov word [snake_direction_y], 0
   
-  call gameControls ;handle control logic
+call gameControls ;handle control logic
   
-  call synchronize ;synchronize emulator and real application through delaying
+call synchronize ;synchronize emulator and real application through delaying
   
 jmp gameLoop
 
@@ -170,6 +282,7 @@ checkForCollision:
             mov word [appleFound], 0
             .no_limit_apple:
 
+            inc word [snake_length]
 
             mov word [si], 0
             ;ding ding count found
@@ -193,6 +306,15 @@ checkForCollision:
         .noMapCollision:
         mov byte [canWalk], 1
         mov word [di]   ,bp  ;update the animation in use
+
+        ;UPDATE NEW POSITION,BUT STORE OLD
+        ;X
+        mov bp, word [di+2]
+        mov word [tmp_old_x], bp
+        ;Y
+        mov bp, word [di+4]
+        mov word [tmp_old_y], bp
+        
         mov word [di+2] ,cx  ;update x pos
         mov word [di+4] ,dx  ;update y pos
     popa                 ;reload old register state
@@ -222,6 +344,15 @@ gameControls:
 
 
   .check_movement:
+
+  mov al, byte [pressLeft]
+  add al, byte [pressRight]
+  cmp al, 0
+
+  mov al, byte [pressLeft]
+  add al, byte [pressRight]
+  cmp al, 0
+
   mov al, byte [pressLeft]
   add al, byte [pressRight]
   cmp al, 0
@@ -241,8 +372,9 @@ gameControls:
     cmp byte [inverted], 1 ;verify if movement is inverted
     je .mov_left
     .mov_right:
-    inc cx
+    add cx, 8
     mov bp, snake_head_img_right
+    mov word [snake_direction_x], 1
     jmp .na ;already moved so go check collision
 
     .nd:
@@ -251,8 +383,9 @@ gameControls:
     cmp byte [inverted], 1
     je .mov_right
     .mov_left:
-    dec cx
+    sub cx, 8
     mov bp, snake_head_img_left
+    mov word [snake_direction_x], -1
 
     .na:
     call checkForCollision ;check if player would collide on new position, if not change position to new position
@@ -277,8 +410,9 @@ gameControls:
     cmp byte [inverted], 1; verify if movement is inverted
     je .mov_down
     .mov_up:
-    dec dx
+    sub dx, 8
     mov bp, snake_head_img_up
+    mov word [snake_direction_y], 1
     jmp .ns ;already moved so go check collision
 
     .nw:
@@ -287,8 +421,9 @@ gameControls:
     cmp byte [inverted], 1
     je .mov_up
     .mov_down:
-    inc dx
+    add dx, 8
     mov bp, snake_head_img_down
+    mov word [snake_direction_y], -1
 
     .ns:
     call checkForCollision ;check if player would collide on new position, if not change position to new position
@@ -350,6 +485,7 @@ keyboardINTListener: ;interrupt handler for keyboard events
     cmp al,0x26 ; L
     jne .check6
       mov byte [cs:pressL], bl
+
     .check6:
     mov al, 20h ;20h
     out 20h, al ;acknowledge the interrupt so further interrupts can be handled again 
@@ -359,7 +495,7 @@ keyboardINTListener: ;interrupt handler for keyboard events
 ;using interrupts instread of the BIOS is SUUPER fast which is why we need to delay execution for at least a few ms per gametick to not be too fast
 synchronize:
   pusha
-    mov si, 15 ; si = time in ms
+    mov si, 80 ; si = time in ms
     mov dx, si
     mov cx, si
     shr cx, 6
@@ -597,16 +733,29 @@ toggle_inverted:
   ret
 
 toggle_pause:
+pusha
   cmp byte [paused], 0
   ;game is paused so set to running
   jne .set_not_paused
   ;game is not paused so pause
   .set_paused:
     mov byte [paused], 1
+
+    ; mov si, game_paused
+    ; mov ax, [snake_positions_x]
+    ; sub ax, [snake_head_posx]
+    ; mov bx, [snake_positions_y]
+    ; sub bx, [snake_head_posy]
+    ; call drawImage
+
+
+    popa
     ret
   .set_not_paused:
     mov byte [paused], 0
-  ret
+
+popa
+ret
 
 %include "buffer.asm"
 
@@ -615,6 +764,7 @@ toggle_pause:
 paused db 0
 inverted db 0
 appleFound dw 0
+
 
 ;entity array
 
@@ -627,8 +777,19 @@ snake:
   snake_head_sprite dw snake_head_img_left
   snake_head_posx dw 0x32
   snake_head_posy dw 0x32
+  snake_positions_x times snake_max_size dw 0
+  snake_positions_y times snake_max_size dw 0
+  snake_direction_x dw 0 ;-1 left , 1 right
+  snake_direction_y dw 0 ;-1 down , 1 up
+  snake_length dw 0
   snake_body_sprite dw snake_body_img
 
+
+
+tmp_old_x dw 0
+tmp_old_x_2 dw 0
+tmp_old_y dw 0
+tmp_old_y_2 dw 0
 
 ;entity structure
 box:
@@ -699,7 +860,7 @@ ASCIImap          incbin "img/map.bin"
 
 
 %assign usedMemory ($-$$)
-%assign usableMemory (512*16)
+%assign usableMemory (512*32)
 %warning [usedMemory/usableMemory] Bytes used
-times (512*16)-($-$$) db 0 ;kernel must have size multiple of 512 so let's pad it to the correct size
+times (512*32)-($-$$) db 0 ;kernel must have size multiple of 512 so let's pad it to the correct size
 ;times (512*1000)-($-$$) db 0 ;toggle this to use in bochs

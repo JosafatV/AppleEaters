@@ -44,6 +44,16 @@ resetBuffer2:
 	popa
 	ret
 
+;resets screen to full black
+resetBufferBlack:
+	pusha
+	mov cx, 160*120/2 ; divide by 2 because it cant fit in 16 bits
+	xor ax, ax ;this will make the background black
+	mov di, [screenPos]
+	rep stosw
+	popa
+	ret
+
 ; Original
 ; screen has size 320x200 but buffer only 80x60
 ; copyBufferOver:
@@ -75,6 +85,51 @@ resetBuffer2:
 ; 	popa
 ; 	ret
 
+; gamePause:
+; 	; pusha
+; 	; mov cx, 160*120/2 ; divide by 2 because it cant fit in 16 bits
+; 	; ;xor ax, ax ;this will make the background black
+; 	; mov ax, 0x0000 ;this paints the background green
+; 	; mov di, [screenPos]
+; 	; rep stosw
+
+; 	; mov si, game_over
+; 	; mov ax, 50
+; 	; mov bx, 50
+; 	; call drawImage
+; 	; popa
+; 	call resetBuffer
+; 	pusha
+; 	mov si, game_over
+; 	mov ax, 50
+; 	mov bx, 50
+; 	popa
+; 	call drawImage
+
+; 	jmp waitForUnPause
+
+; 	pause_received:
+
+; 	ret
+
+
+; waitForUnPause: ;interrupt handler for keyboard events
+;   pusha 
+;     xor bx,bx ; bx = 0: signify key down event
+;     inc bx
+;     in al,0x60 ;get input to AX, 0x60 = ps/2 first port for keyboard
+;     btr ax, 7 ;al now contains the key code without key pressed flag, also carry flag set if key up event
+;     jnc .keyDown
+;       dec bx ; bx = 1: key up event
+;     .keyDown:
+;     cmp al,0x39 ;space
+;     jne .check
+;     jmp pause_received
+;     .check:
+;     mov al, 20h ;20h
+;     out 20h, al ;acknowledge the interrupt so further interrupts can be handled again 
+;   popa ;resume state to not modify something by accident
+;   jmp waitForUnPause
 
  ;screen has size 320x200 but buffer only 80x60
  copyBufferOver:
@@ -201,5 +256,16 @@ drawImage:
 
 graphicMemory dw 0xA000
 screenPos dw 0x0500 ;double buffer will be at this address
+
+
+game_over incbin "img/game_over.bin"
+game_exit incbin "img/exit.bin"
+game_restart incbin "img/restart.bin"
+game_return incbin "img/return.bin"
+game_paused incbin "img/paused.bin"
+game_congrats incbin "img/congratulations.bin"
+
+
+
 
 %endif
