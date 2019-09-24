@@ -32,6 +32,12 @@ gameLoop:
   cmp word [paused],1
   je gamePause
 
+  cmp byte [pressEsc], 1
+  je escapeGame
+
+  cmp byte [pressP], 1
+  je restartGame
+
   call resetBuffer ;reset screen to draw on empty canvas
   
   ;MODULAR DRAWING CODE
@@ -199,7 +205,7 @@ gameLoop:
     .not_animation:
       mov word [flag_animation], 1
 
-    .won_labels
+    .won_labels:
     mov si, game_restart ;restart image
     mov ax, 40
     mov bx, 52
@@ -225,8 +231,35 @@ call synchronize ;synchronize emulator and real application through delaying
   
 jmp gameLoop
 
-
 jmp $
+
+escapeGame:
+    ;call resetBufferBlack
+    ;call copyBufferOver
+    jmp end
+
+restartGame:
+    mov byte [pressP], 0
+    mov word [snake_length], 0
+    mov word [gamewon_flag],0
+    mov word [gameover_flag],0
+    mov word [paused],0
+    call resetEntities
+    jmp init_game
+    
+    resetEntities:
+    
+    pusha
+        mov cx, (entityArraySize-1)  ; Moves amount to loop
+        .loopEntities:
+        mov di, cx
+        imul di, 2
+        add di, entityArray
+        mov word [di], 0
+        loop .loopEntities
+    popa
+    ret
+
 
 ;di = entity cx,dx = xpos,zpos
 drawEntity:
@@ -495,6 +528,8 @@ pressUp db 0
 pressDown db 0
 pressSpace db 0
 pressL db 0
+pressEsc db 0
+pressP db 0
 
 
 keyboardINTListener: ;interrupt handler for keyboard events
@@ -532,12 +567,11 @@ keyboardINTListener: ;interrupt handler for keyboard events
     .check6:
     cmp al,0x01 ; Esc
     jne .check7
-      jmp end
+      mov byte [cs:pressEsc], bl
     .check7:
     cmp al,0x19 ; P
     jne .check8
-      ;CODE TO RESTART
-      mov word [gamewon_flag], 1
+      mov byte [cs:pressP], bl
     .check8:
     mov al, 20h ;20h
     out 20h, al ;acknowledge the interrupt so further interrupts can be handled again 
@@ -937,8 +971,14 @@ tileImg_0        incbin "img/grass.bin"
 ASCIImap          incbin "img/map.bin"
 
 end:
-  ;CODE TO END PROGRAM  
-  hlt
+  ;CODE TO END PROGRAM     
+    mov ax, 0x1000
+    mov ax, ss
+    mov sp, 0xf000
+    mov ax, 0x5307
+    mov bx, 0x0001
+    mov cx, 0x0003
+    int 15h
 
 %assign usedMemory ($-$$)
 %assign usableMemory (512*32)
