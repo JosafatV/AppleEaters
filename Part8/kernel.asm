@@ -22,6 +22,12 @@ moved db 0;
 
 ;Main game loop
 gameLoop:
+  
+  cmp word [gamewon_flag],1
+  je gameWon
+
+  cmp word [gameover_flag],1
+  je gameOver
 
   cmp word [paused],1
   je gamePause
@@ -174,35 +180,35 @@ jmp $
 
 ;di = entity cx,dx = xpos,zpos
 drawEntity:
-	push dx
-	inc word [di+6]
-	mov ax, [di+6] ;get index within animation
-	mov si, [di]
-	xor dx,dx
-	div word [si+2]    ; animation time % time of full animation
-	mov ax, dx
-	xor dx, dx
-	div word [si]      ; (animation time % time of full animation) /  time of one frame
-	add ax, ax         ; index*2 because image address is a word
-	
-	add si, 4          ;skip first two words of structure
-	add si, ax		   ;add the offset to the frame
-	mov si, [si]       ;set the image parameter to the image referenced in the frame
-	pop dx
-	
-	;mov si, word [di]   ;get animation
-	;mov si, word [si+4] ;get first frame of animation
-	
-	mov ax, word [di+2] ;get entity x
-	sub ax, cx          ;subtract the position of the player from the x position
-	;add ax, 80/2 - 9/2 - 1  ;relative to screen image drawing code for x position
-	add ax, 160/2 - 8/2 - 1  ;relative to screen image drawing code for x position CHANGED
-	mov bx, word [di+4] ;get entity y
-	sub bx, dx          ;subtract the position of the player from the z position
-	;add bx, 50/2 - 12/2 - 1 ;relative to screen image drawing code for z position
-	add bx, 100/2 - 12/2 - 1 ;relative to screen image drawing code for z position CHANGED
-	call drawImage      ;draw image to buffer
-	ret
+  push dx
+  inc word [di+6]
+  mov ax, [di+6] ;get index within animation
+  mov si, [di]
+  xor dx,dx
+  div word [si+2]    ; animation time % time of full animation
+  mov ax, dx
+  xor dx, dx
+  div word [si]      ; (animation time % time of full animation) /  time of one frame
+  add ax, ax         ; index*2 because image address is a word
+  
+  add si, 4          ;skip first two words of structure
+  add si, ax       ;add the offset to the frame
+  mov si, [si]       ;set the image parameter to the image referenced in the frame
+  pop dx
+  
+  ;mov si, word [di]   ;get animation
+  ;mov si, word [si+4] ;get first frame of animation
+  
+  mov ax, word [di+2] ;get entity x
+  sub ax, cx          ;subtract the position of the player from the x position
+  ;add ax, 80/2 - 9/2 - 1  ;relative to screen image drawing code for x position
+  add ax, 160/2 - 8/2 - 1  ;relative to screen image drawing code for x position CHANGED
+  mov bx, word [di+4] ;get entity y
+  sub bx, dx          ;subtract the position of the player from the z position
+  ;add bx, 50/2 - 12/2 - 1 ;relative to screen image drawing code for z position
+  add bx, 100/2 - 12/2 - 1 ;relative to screen image drawing code for z position CHANGED
+  call drawImage      ;draw image to buffer
+  ret
 
 ;di = entity, cx = new_xpos, dx = new_zpos, bp = new animation
 ;fixed for modular entity system
@@ -278,11 +284,22 @@ checkForCollision:
             jl .no_limit_apple
 
             ; TEST IF IT WORKS
-            mov ax, 23
-            call resetBuffer2
-            call copyBufferOver
-            call waits
+            ; mov ax, 0xC3
+            ; call resetBuffer2
+            ; call copyBufferOver
+            ; call waits
+            
+
+            dec word [snake_length]            
+            cmp word [snake_length], 0
+            jge .continue
+            mov word [gameover_flag], 1
+          
+            
+
             ; ----------------------
+
+            .continue
 
             mov word [appleFound], 0
             .no_limit_apple:
@@ -489,8 +506,16 @@ keyboardINTListener: ;interrupt handler for keyboard events
     cmp al,0x26 ; L
     jne .check6
       mov byte [cs:pressL], bl
-
     .check6:
+    cmp al,0x01 ; Esc
+    jne .check7
+      jmp end
+    .check7:
+    cmp al,0x19 ; P
+    jne .check8
+      ;CODE TO RESTART
+      mov word [gamewon_flag], 1
+    .check8:
     mov al, 20h ;20h
     out 20h, al ;acknowledge the interrupt so further interrupts can be handled again 
   popa ;resume state to not modify something by accident
@@ -554,57 +579,57 @@ addEntity:
 
 ;di = entity cx,dx = xpos,zpos
 drawBlock:
-	pusha
-		mov ax, word [snake_head_posx]
-		sub ax, cx
-		;imul ax, ax
+  pusha
+    mov ax, word [snake_head_posx]
+    sub ax, cx
+    ;imul ax, ax
 
-		call abs_value
+    call abs_value
 
-		cmp ax, 90 ; CHANGED
-		jge .skip 	 ; CHANGED
+    cmp ax, 90 ; CHANGED
+    jge .skip    ; CHANGED
 
-		mov bx, word [snake_head_posy]
-		sub bx, dx
-		mov ax, bx
-		call abs_value
-		; imul bx, bx
+    mov bx, word [snake_head_posy]
+    sub bx, dx
+    mov ax, bx
+    call abs_value
+    ; imul bx, bx
 
-		cmp ax, 90 ; CHANGED
-		jge .skip 	 ; CHANGED
+    cmp ax, 90 ; CHANGED
+    jge .skip    ; CHANGED
 
-		;add ax, bx
-		;cmp ax, 0 ;calculate distance CHANGED
-		;jge .skip
+    ;add ax, bx
+    ;cmp ax, 0 ;calculate distance CHANGED
+    ;jge .skip
 
-		mov ax, cx
-		mov bx, dx
-		sub ax, word [snake_head_posx]   ;subtract the position of the snake_head_posx from the x position
-		;add ax, 80/2 - 9/2 - 1    ;relative to screen image drawing code for x position
-		add ax, 160/2 - 9/2 - 1    ;relative to screen image drawing code for x position CHANGED
-		sub bx, word [snake_head_posy]   ;subtract the position of the snake_head_posx from the z position
-		;add bx, 50/2 - 12/2 - 1   ;relative to screen image drawing code for z position
-		add bx, 100/2 - 12/2 - 1   ;relative to screen image drawing code for z position CHANGED
-		call drawImage            ;draw image to buffer
-		.skip:
-		clc
-	popa
-	ret
+    mov ax, cx
+    mov bx, dx
+    sub ax, word [snake_head_posx]   ;subtract the position of the snake_head_posx from the x position
+    ;add ax, 80/2 - 9/2 - 1    ;relative to screen image drawing code for x position
+    add ax, 160/2 - 9/2 - 1    ;relative to screen image drawing code for x position CHANGED
+    sub bx, word [snake_head_posy]   ;subtract the position of the snake_head_posx from the z position
+    ;add bx, 50/2 - 12/2 - 1   ;relative to screen image drawing code for z position
+    add bx, 100/2 - 12/2 - 1   ;relative to screen image drawing code for z position CHANGED
+    call drawImage            ;draw image to buffer
+    .skip:
+    clc
+  popa
+  ret
 
 ; value in ax, output in ax
 abs_value:
-	push dx
-		mov bx, ax ; copies ax
-		shr bx, 15 ; gets sign of ax
-		and bx, 1 ; gets only sign of ax
-		cmp bx, 1
-		jne .abs_value_end
-		; if sign is negative, multiply by -1
-		imul ax, -1
-	.abs_value_end:
-	pop dx
-	ret
-	
+  push dx
+    mov bx, ax ; copies ax
+    shr bx, 15 ; gets sign of ax
+    and bx, 1 ; gets only sign of ax
+    cmp bx, 1
+    jne .abs_value_end
+    ; if sign is negative, multiply by -1
+    imul ax, -1
+  .abs_value_end:
+  pop dx
+  ret
+  
 ;set the position of the player to x=cx, z=dx
 setSpawn:
   mov word [snake_head_posx], cx ; set player x
@@ -764,6 +789,8 @@ ret
 
 ;game value
 paused db 0
+gameover_flag db 0
+gamewon_flag db 0
 inverted db 0
 appleFound dw 0
 
@@ -860,6 +887,9 @@ tileImg_0        incbin "img/grass.bin"
 
 ASCIImap          incbin "img/map.bin"
 
+end:
+  ;CODE TO END PROGRAM  
+  hlt
 
 %assign usedMemory ($-$$)
 %assign usableMemory (512*32)
