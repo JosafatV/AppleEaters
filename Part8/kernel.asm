@@ -245,10 +245,26 @@ gameLoop:
       mov word [flag_animation], 1
 
     .won_labels:
+    cmp word [level_num], 3 
+    je .label_restart ;p for restart game
+    jmp .label_next_level ;p for next level
+
+
+    .label_restart:
     mov si, game_restart ;restart image
     mov ax, 40
     mov bx, 52
     call drawImage
+    jmp .label_exit
+
+    .label_next_level:
+    mov si, next_level ;next level image
+    mov ax, 25
+    mov bx, 52
+    call drawImage
+
+    .label_exit:
+
     mov si, game_exit ;exit image
     mov ax, 44
     mov bx, 59
@@ -289,12 +305,15 @@ restartGame:
     .load_level_1:
       mov word [level_num], 1
       mov word [mapp], ASCIImap1 ; init map
+      mov word [velocity], 80
       jmp .continue_next_level
     .load_level_2:
       mov word [mapp], ASCIImap2 ; init map
+      mov word [velocity], 60
       jmp .continue_next_level
     .load_level_3:
       mov word [mapp], ASCIImap3 ; init map
+      mov word [velocity], 40
       jmp .continue_next_level
 
     .continue_next_level:
@@ -692,7 +711,7 @@ keyboardINTListener: ;interrupt handler for keyboard events
 ;using interrupts instread of the BIOS is SUUPER fast which is why we need to delay execution for at least a few ms per gametick to not be too fast
 synchronize:
   pusha
-    mov si, 80 ; si = time in ms
+    mov si, word [velocity] ; si = time in ms
     mov dx, si
     mov cx, si
     shr cx, 6
@@ -1139,6 +1158,7 @@ inverted db 0
 appleFound dw 0
 flag_animation dw 0
 level_num dw 1
+velocity dw 80
 
 
 ;entity array
@@ -1269,6 +1289,7 @@ pause_key incbin "img/pause_key.bin"
 invert_key incbin "img/invert_key.bin"
 reset_key incbin "img/reset_key.bin"
 level incbin "img/level.bin"
+next_level incbin "img/next_level.bin"
 
 boxImg_0         incbin "img/block.bin"
 tileImg_0        incbin "img/grass.bin"
