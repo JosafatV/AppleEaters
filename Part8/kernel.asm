@@ -1004,6 +1004,8 @@ removeFruits:
     je .skip   ; skip if grass
     cmp al, '0'
     je .skip   ; skip if block
+    cmp al, 'P'
+    je .skip   ; skip if player
 
     push ax     ; save the content of ax
     mov byte [di], ' '
