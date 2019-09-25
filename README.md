@@ -1,17 +1,28 @@
 # AppleEaters
-Segunda Tarea de SO
+Segunda Tarea de Sistemas Operativos - II 2019
 
 ### Bootloader
 
-AT&T Syntax
-AS compiler
+Intel Syntax
+NASM compiler
 
-Testable with QEmu 
-    $ sudo apt-get install qemu
+Testable with QEmu
+	
+~~~~
+    sudo apt-get install qemu
+	
+~~~~
+To run:
+	
+~~~~
+    make
+	
+~~~~
+To burn into a USB drive:
 
-To run: 
-    $ make
-    $ make execute
-
-To clean:
-    $ make clean
+* Find your drive ID with fdisk -l or check in the disk manager
+* Get your path to the image
+	
+~~~~
+    dd if=/pathtoimage of=/dev/sdx
+~~~~
