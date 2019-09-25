@@ -392,7 +392,7 @@ checkForCollision:
             ;mov cx, [di+2]         ;set new x pos to current x pos => no movement
             ;mov dx, [di+4]         ;set new z pos to current z pos => no movement
 
-            call spawnRandomFruit
+            call spawnRandomFruits
 
             lea bx, [bx+8]
             mov ax, [bx] 
@@ -922,7 +922,7 @@ random_fruit:
 
 spawned db 0
 tospawn db 0
-spawnRandomFruit:
+spawnRandomFruits:
   pusha
     mov byte [spawned], 0
     mov byte [aSpawned], 0
