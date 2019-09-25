@@ -12,9 +12,9 @@ call initGraphics
 call registerInterruptHandlers
 
 init_game:
-
+call restartGame
 mov word [appleFound], 0
-
+mov word [mapp], ASCIImap1 ; init map
 ;init map
 call initMap
 
@@ -274,19 +274,43 @@ restartGame:
     call resetEntities
     call removeFruits
 
-    mov cx, frutitas
-    .add_fruits:
-      call spawnRandomFruits
-    loop .add_fruits
-    mov byte [pressP], 0
-    mov word [snake_length], 0
-    mov word [gamewon_flag],0
-    mov word [gameover_flag],0
-    mov word [paused],0
-    mov byte [moved],0
-    mov word [appleFound],0
-    call initMap
-    jmp gameLoop
+    cmp byte [gamewon_flag], 0
+    je .load_level_1
+
+    ; load next level if won game
+    inc word [level_num]
+    cmp word [level_num], 4
+    je .load_level_1
+    cmp word [level_num], 2
+    je .load_level_2
+    cmp word [level_num], 3
+    je .load_level_3
+
+    .load_level_1:
+      mov word [level_num], 1
+      mov word [mapp], ASCIImap1 ; init map
+      jmp .continue_next_level
+    .load_level_2:
+      mov word [mapp], ASCIImap2 ; init map
+      jmp .continue_next_level
+    .load_level_3:
+      mov word [mapp], ASCIImap3 ; init map
+      jmp .continue_next_level
+
+    .continue_next_level:
+      mov cx, frutitas
+      .add_fruits:
+        call spawnRandomFruits
+      loop .add_fruits
+      mov byte [pressP], 0
+      mov word [snake_length], 0
+      mov word [gamewon_flag],0
+      mov word [gameover_flag],0
+      mov word [paused],0
+      mov byte [moved],0
+      mov word [appleFound],0
+      call initMap
+      jmp gameLoop
 
 resetEntities:
     mov cx, (entityArraySize-1)  ; Moves amount to loop
@@ -838,7 +862,10 @@ spawnPlayer:
 
 iterateMap:
   pusha
-    mov di, ASCIImap
+    mov di, 0
+    add di, mapp
+    mov di, [di]
+
     mov cx, 0x0 ; map start x
     mov dx, 0x0 ; map start y
     .next:
@@ -865,9 +892,9 @@ iterateMap:
   popa
   ret
 
-%define randomLimitA 5
-%define randomLimitO 10
-%define randomLimitL 15
+%define randomLimitA 10
+%define randomLimitO 15
+%define randomLimitL 20
 ; fruit in ax returned, intervals
 ; animation returned in si
 
@@ -941,7 +968,7 @@ spawnRandomFruits:
     mov byte [tospawn], cl
 
     .start_spawning:
-    mov di, ASCIImap
+    mov di, [mapp]
     mov cx, 0x0 ; map start x
     mov dx, 0x0 ; map start y
 
@@ -993,7 +1020,8 @@ spawnRandomFruits:
 
 removeFruits:
   pusha
-    mov di, ASCIImap
+    mov di, mapp
+    mov di, [di]
     mov cx, 0x0 ; map start x
     mov dx, 0x0 ; map start y
     .next:
@@ -1148,7 +1176,10 @@ box_AnimC dw 0               ;animation counter
 ;other entity structures:
 entityArrayMem:
   resw 5*entityArraySize
-  
+
+mapp:
+  resw 1;
+
 boxImg:
   dw 1            ;time per frames
   dw 1            ;time of animation
@@ -1193,6 +1224,8 @@ nums:
   dw num_7
   dw num_8
   dw num_9
+
+
 
 snake_head_img_left  incbin "img/snake_head_left.bin"
 snake_head_img_up  incbin "img/snake_head_up.bin"
@@ -1240,7 +1273,12 @@ level incbin "img/level.bin"
 boxImg_0         incbin "img/block.bin"
 tileImg_0        incbin "img/grass.bin"
 
-ASCIImap          incbin "img/map3.bin"
+ASCIImap1          incbin "img/map.bin"
+db 0
+ASCIImap2          incbin "img/map2.bin"
+db 0
+ASCIImap3          incbin "img/map3.bin"
+db 0
 
 %assign usedMemory ($-$$)
 %assign usableMemory (512*32)
