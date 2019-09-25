@@ -349,7 +349,7 @@ drawEntity:
   mov bx, word [di+4] ;get entity y
   sub bx, dx          ;subtract the position of the player from the z position
   ;add bx, 50/2 - 12/2 - 1 ;relative to screen image drawing code for z position
-  add bx, 100/2 - 12/2 - 1 ;relative to screen image drawing code for z position CHANGED
+  add bx, 100/2 - 8/2 - 1 ;relative to screen image drawing code for z position CHANGED
   call drawImage      ;draw image to buffer
   ret
 
@@ -743,10 +743,10 @@ drawBlock:
     mov bx, dx
     sub ax, word [snake_head_posx]   ;subtract the position of the snake_head_posx from the x position
     ;add ax, 80/2 - 9/2 - 1    ;relative to screen image drawing code for x position
-    add ax, 160/2 - 9/2 - 1    ;relative to screen image drawing code for x position CHANGED
+    add ax, 160/2 - 8/2 - 1    ;relative to screen image drawing code for x position CHANGED
     sub bx, word [snake_head_posy]   ;subtract the position of the snake_head_posx from the z position
     ;add bx, 50/2 - 12/2 - 1   ;relative to screen image drawing code for z position
-    add bx, 100/2 - 12/2 - 1   ;relative to screen image drawing code for z position CHANGED
+    add bx, 100/2 - 8/2 - 1   ;relative to screen image drawing code for z position CHANGED
     call drawImage            ;draw image to buffer
     .skip:
     clc
@@ -771,7 +771,7 @@ abs_value:
 setSpawn:
   mov word [snake_head_posx], cx ; set player x
   mov word [snake_head_posy], dx ; set player z
-  add word [snake_head_posy], 3  ; offset player z
+  ;add word [snake_head_posy], 3  ; offset player z
   clc
   ret
   
@@ -827,7 +827,7 @@ spawnPlayer:
     
 %define tileWidth      8
 %define ASCIImapWidth  64
-%define ASCIImapHeight 64
+%define ASCIImapHeight 16
 ;bp = function to call, ah = search for, si = parameter for bp function
 
 iterateMap:
@@ -869,10 +869,10 @@ blockCollison:
   add cx, 8+7          ;add 8 because of hitbox
   cmp cx, si ; (blockX+8 > playerX)
     jle .skip
-  sub dx, 9          ;subtract 10 because of hitbox
+  sub dx, 6          ;subtract 10 because of hitbox
   cmp dx, bx ; (blockZ-10 <= playerZ)
     jg .skip
-  add dx, 5+10         ;subtract 9 because of hitbox
+  add dx, 5+7         ;subtract 9 because of hitbox
   cmp dx, bx ; (blockZ+9 > playerZ)
     jle .skip
     stc
