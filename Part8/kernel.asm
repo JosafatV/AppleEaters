@@ -143,7 +143,7 @@ gameLoop:
     mov ax, 154
     mov bx, 2
     call drawImage
-    jmp done_drawing
+    jmp draw_controls
 
     .set_first_digit_1:
     mov si, num_1
@@ -158,7 +158,45 @@ gameLoop:
     mov ax, 154
     mov bx, 2
     call drawImage
+    jmp draw_controls
+
+  draw_controls:
+    mov si, move
+    mov ax, 2
+    mov bx, 2
+    call drawImage
+
+    mov si, exit_key
+    mov ax, 2
+    mov bx, 9
+    call drawImage
+
+    mov si, invert_key
+    mov ax, 2
+    mov bx, 16
+    call drawImage
+
+    mov si, pause_key
+    mov ax, 2
+    mov bx, 23
+    call drawImage
+
+    mov si, level
+    mov ax, 2
+    mov bx, 30
+    call drawImage
+
+    ;draw level
+    mov bx, word [level_num]
+    add bx, bx
+    mov si, [nums+bx]
+    mov ax, 24
+    mov bx, 30
+    call drawImage
+
+
     jmp done_drawing
+
 
   gamePause:
     call resetBufferBlack
@@ -905,6 +943,7 @@ quit db 0
 inverted db 0
 appleFound dw 0
 flag_animation dw 0
+level_num dw 1
 
 
 ;entity array
@@ -1024,10 +1063,12 @@ num_7 incbin "img/7.bin"
 num_8 incbin "img/8.bin"
 num_9 incbin "img/9.bin"
 score incbin "img/score.bin"
-; move incbin "img/move.bin"
-; exit_key incbin "img/exit_key.bin"
-; pause_key incbin "img/pause_key.bin"
-; invert_key incbin "img/invert_key.bin"
+move incbin "img/move.bin"
+exit_key incbin "img/exit_key.bin"
+pause_key incbin "img/pause_key.bin"
+invert_key incbin "img/invert_key.bin"
+reset_key incbin "img/reset_key.bin"
+level incbin "img/level.bin"
 
 boxImg_0         incbin "img/block.bin"
 tileImg_0        incbin "img/grass.bin"
