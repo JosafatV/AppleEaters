@@ -3,7 +3,7 @@ bits 16
 
 ;precompiler constant
 %define entityArraySize 100
-%define snake_max_size 20
+%define snake_max_size 30
 ;Let's begin by going into graphic mode
 call initGraphics
 
@@ -243,7 +243,7 @@ gameLoop:
     .not_animation:
       mov word [flag_animation], 1
 
-    .won_labels
+    .won_labels:
     mov si, game_restart ;restart image
     mov ax, 40
     mov bx, 52
@@ -262,7 +262,7 @@ gameLoop:
 
   mov word [snake_direction_x], 0
   mov word [snake_direction_y], 0
-  
+
 call gameControls ;handle control logic
   
 call synchronize ;synchronize emulator and real application through delaying
@@ -271,6 +271,7 @@ jmp gameLoop
 
 restartGame:
     call resetEntities
+    call removeFruits
     mov byte [pressP], 0
     mov word [snake_length], 0
     mov word [gamewon_flag],0
@@ -391,9 +392,10 @@ checkForCollision:
             ;mov cx, [di+2]         ;set new x pos to current x pos => no movement
             ;mov dx, [di+4]         ;set new z pos to current z pos => no movement
 
+            call spawnRandomFruit
+
             lea bx, [bx+8]
             mov ax, [bx] 
-            ;mov ax, [bx+8]
             cmp ah, 'A' ; Compare to apple 
             je .found_apple
             cmp ah, 'O' ; Compare to orange
@@ -701,9 +703,6 @@ addEntity:
     mov al, 0
     mov word [bx], ax;1
     mov ax, [bx]
-;    call resetBuffer2
-;    call copyBufferOver
-;    call waits
 
     popa
     xor eax, eax   ; return 0 if successfully added
@@ -713,6 +712,7 @@ addEntity:
     xor eax, eax
     inc eax       ; return 1 if failed to find a place for the entity
     ret
+
 
 ;di = entity cx,dx = xpos,zpos
 drawBlock:
@@ -824,7 +824,7 @@ spawnPlayer:
   mov ah, 'P'
   call iterateMap ; iterate the map and set the player position to the last 'P' found on the map
   ret
-    
+
 %define tileWidth      8
 %define ASCIImapWidth  64
 %define ASCIImapHeight 16
@@ -858,7 +858,166 @@ iterateMap:
     .term:
   popa
   ret
-  
+
+%define randomLimitA 5
+%define randomLimitO 10
+%define randomLimitL 15
+; fruit in ax returned, intervals
+; animation returned in si
+
+aSpawned db 0
+oSpawned db 0
+lSpawned db 0
+random_fruit:
+  pushf
+  push dx
+  push cx
+
+    ; Generate random to cx
+    rdtsc              ; Read Time-stamp Counter
+    mov cx, ax
+    and cx, 16383
+    ;inc cx
+
+    mov ax, cx
+
+
+    .random_A:
+    cmp cx, randomLimitA ; Check interval
+    jae .random_O         ; If not in interval, jump to another
+    cmp byte [aSpawned], 1 ; Check if one already spawned
+    je .random_O            ; If one already spawned, jump to another
+    mov al, 'A'              ; Spawns an apple
+    mov si, appleImg          ; With its image
+    inc byte [aSpawned]         ; And increment the amount of spawned apples this round
+    jmp .random_fruit_end        ; Then jump to end
+
+    .random_O:
+    cmp cx, randomLimitO
+    jae .random_L
+    cmp byte [oSpawned], 1
+    je .random_L
+    mov al, 'O'
+    mov si, orangeImg
+    inc byte [oSpawned]
+    jmp .random_fruit_end
+
+    .random_L:
+    cmp cx, randomLimitL
+    jae .random_None
+    cmp byte [lSpawned], 1
+    je .random_None
+    mov al, 'L'
+    mov si, lemonImg
+    inc byte [lSpawned]
+    jmp .random_fruit_end
+
+    .random_None:
+    mov ax, 0
+  .random_fruit_end:
+  pop cx
+  pop dx
+  popf
+  ret
+
+spawned db 0
+tospawn db 0
+spawnRandomFruit:
+  pusha
+    mov byte [spawned], 0
+    mov byte [aSpawned], 0
+    mov byte [oSpawned], 0
+    mov byte [lSpawned], 0
+    rdtsc              ; Read Time-stamp Counter
+    mov cx, ax
+    inc cx ;in case it gives 0
+    and cx, 3 ; return from 1 to 3
+    mov byte [tospawn], cl
+
+    .start_spawning:
+    mov di, ASCIImap
+    mov cx, 0x0 ; map start x
+    mov dx, 0x0 ; map start y
+
+    .next_:
+    mov al, [di]
+    test al, al
+    je .stop_    ; stop_ when null terminator found
+    cmp al, ' '
+    jne .skip_   ; skip_ if its not an empty space
+
+    ; Spawn a random fruit
+      pusha
+      pushf
+        ; Generate one of the three types
+        call random_fruit
+        cmp ax, 0 ; 0 means to generate nothing
+        je .not_spawn_fruit
+
+        inc byte [spawned]
+        mov byte [di], al   ; change value in map
+        mov ah, al
+        call addEntity     ; call the specified function of this iteration
+        .not_spawn_fruit:
+      popf
+      popa
+
+    ; Check if already spawned three
+    mov al, byte [tospawn]
+    cmp byte [spawned], al
+    je .term_
+
+    .skip_:
+      inc di                           ; point to the next_ character
+      add cx, tileWidth                ; increase x pixel position
+      cmp cx, ASCIImapWidth*tileWidth  ; check if x position is at the end of the line
+      jl .next_
+    sub dx, tileWidth                    ; decrease y pixel position
+    xor cx, cx                           ; reset x position
+    jmp .next_
+    .stop_:
+      clc
+    .term_:
+
+    ; jump if it didnt spawn
+    cmp byte [spawned], 0
+    je .start_spawning
+  popa
+  ret
+
+removeFruits:
+  pusha
+    mov di, ASCIImap
+    mov cx, 0x0 ; map start x
+    mov dx, 0x0 ; map start y
+    .next:
+    mov al, [di]
+    test al, al
+    je .stop    ; stop when null terminator found
+    cmp al, ' '
+    je .skip   ; skip if grass
+    cmp al, '0'
+    je .skip   ; skip if block
+
+    push ax     ; save the content of ax
+    mov byte [di], ' '
+    clc
+    pop ax
+    jc .term    ; the carry flag determines if the specified function has found what it was searching for (and thus exits)
+    .skip:
+      inc di                           ; point to the next character
+      add cx, tileWidth                ; increase x pixel position
+      cmp cx, ASCIImapWidth*tileWidth  ; check if x position is at the end of the line
+      jl .next
+    sub dx, tileWidth                    ; decrease y pixel position
+    xor cx, cx                           ; reset x position
+    jmp .next
+    .stop:
+      clc
+    .term:
+  popa
+  ret
+
 ;si = player x, bx = player z, cx = block x, dx = block z
 blockCollison:
   push cx
@@ -897,29 +1056,29 @@ toggle_inverted:
   ret
 
 toggle_pause:
-pusha
-  cmp byte [paused], 0
-  ;game is paused so set to running
-  jne .set_not_paused
-  ;game is not paused so pause
-  .set_paused:
-    mov byte [paused], 1
+  pusha
+    cmp byte [paused], 0
+    ;game is paused so set to running
+    jne .set_not_paused
+    ;game is not paused so pause
+    .set_paused:
+      mov byte [paused], 1
 
-    ; mov si, game_paused
-    ; mov ax, [snake_positions_x]
-    ; sub ax, [snake_head_posx]
-    ; mov bx, [snake_positions_y]
-    ; sub bx, [snake_head_posy]
-    ; call drawImage
+      ; mov si, game_paused
+      ; mov ax, [snake_positions_x]
+      ; sub ax, [snake_head_posx]
+      ; mov bx, [snake_positions_y]
+      ; sub bx, [snake_head_posy]
+      ; call drawImage
 
 
-    popa
-    ret
-  .set_not_paused:
-    mov byte [paused], 0
+      popa
+      ret
+    .set_not_paused:
+      mov byte [paused], 0
 
-popa
-ret
+  popa
+  ret
 
 end:
   ;CODE TO END PROGRAM     
@@ -949,8 +1108,8 @@ level_num dw 1
 ;entity array
 
 entityArray:
-      dw snake
-      resw entityArraySize
+  dw snake
+  resw entityArraySize
 
 ;snake structure
 snake:
@@ -1074,10 +1233,6 @@ boxImg_0         incbin "img/block.bin"
 tileImg_0        incbin "img/grass.bin"
 
 ASCIImap          incbin "img/map.bin"
-
-; end:
-;   ;CODE TO END PROGRAM  
-;   hlt
 
 %assign usedMemory ($-$$)
 %assign usableMemory (512*32)
