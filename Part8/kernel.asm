@@ -4,6 +4,7 @@ bits 16
 ;precompiler constant
 %define entityArraySize 100
 %define snake_max_size 30
+%define frutitas 5
 ;Let's begin by going into graphic mode
 call initGraphics
 
@@ -272,6 +273,11 @@ jmp gameLoop
 restartGame:
     call resetEntities
     call removeFruits
+
+    mov cx, frutitas
+    .add_fruits:
+      call spawnRandomFruits
+    loop .add_fruits
     mov byte [pressP], 0
     mov word [snake_length], 0
     mov word [gamewon_flag],0
@@ -1232,7 +1238,7 @@ level incbin "img/level.bin"
 boxImg_0         incbin "img/block.bin"
 tileImg_0        incbin "img/grass.bin"
 
-ASCIImap          incbin "img/map.bin"
+ASCIImap          incbin "img/map3.bin"
 
 %assign usedMemory ($-$$)
 %assign usableMemory (512*32)
